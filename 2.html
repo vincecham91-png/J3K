@@ -221,6 +221,9 @@
     <div class="main-title">
         班级整体表现评估 / LAPORAN PRESTASI KELAS J3K 初三仁
     </div>
+    <div class="edit-link" style="margin: 10px 0; text-align: right;">
+        <a href="https://github.com/vincecham91-png/J3K/edit/main/2.html" target="_blank" style="font-size: 14px; color: #2F5597; text-decoration: none;">✏️ Edit Template</a>
+    </div>
 
     <div class="control-panel">
         <div>
@@ -297,11 +300,12 @@
             tr.id = `student-row-${idx}`;
             
             const photoHtml = student.photo
-    ? (() => {
-        const cleanName = student.photo.replace(/_2(?=\.[^.]+$)/, '');
-        return `<img src="${encodeURI('J3K photo/' + cleanName)}" class="student-photo" alt="${student.name}">`;
-      })()
-    : `<div class="no-photo-placeholder">No Photo</div>`;
+        ? (() => {
+            const cleanName = student.photo.replace(/_2(?=\.[^.]+$)/, '');
+            const rawBase = 'https://raw.githubusercontent.com/vincecham91-png/J3K/main/';
+            return `<img src="${encodeURI(rawBase + 'J3K photo/' + cleanName)}" class="student-photo" alt="${student.name}">`;
+          })()
+        : `<div class="no-photo-placeholder">No Photo</div>`;
 
             tr.innerHTML = `
                 <td class="col-center">${idx + 1}</td>
