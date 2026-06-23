@@ -2,62 +2,329 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Edit 2.html Template</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Teacher Feedback Template</title>
+  <!-- Modern Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
   <style>
-    body {font-family: Arial, sans-serif; margin: 2rem; background:#f9f9f9;}
-    label {display:block; margin-top:1rem; font-weight:bold;}
-    textarea {width:100%; height:400px; font-family: monospace; margin-top:0.5rem;}
-    button {margin-top:1rem; padding:0.6rem 1.2rem; font-size:1rem;}
-    .msg {margin-top:1rem; color: green;}
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #818cf8, #e0e7ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #a5b4fc;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input[type="password"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+    }
+
+    textarea {
+      width: 100%;
+      height: 450px;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #38bdf8;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      resize: vertical;
+      transition: border-color 0.3s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      gap: 1rem;
+    }
+
+    button {
+      padding: 0.8rem 2rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .msg {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      display: none;
+      line-height: 1.4;
+    }
+
+    .msg.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .msg.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .msg.loading {
+      display: block;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
   </style>
 </head>
 <body>
-  <h1>Edit the Teacher‑Feedback Template (2.html)</h1>
-  <label for="pwd">Password:</label>
-  <input type="password" id="pwd" placeholder="Enter password" />
 
-  <label for="content">HTML content:</label>
-  <textarea id="content"></textarea>
+  <div class="container">
+    <h1>✏️ Edit Feedback Template</h1>
+    <p class="subtitle">Update the content of <code>2.html</code> directly on GitHub Pages</p>
 
-  <button id="saveBtn">Save changes</button>
-  <div class="msg" id="msg"></div>
+    <div class="input-group">
+      <label for="pwd">GitHub Personal Access Token (PAT) / 密码:</label>
+      <input type="password" id="pwd" placeholder="Enter your GitHub PAT (ghp_...)" />
+    </div>
+
+    <div class="input-group">
+      <label for="content">HTML template content (2.html):</label>
+      <textarea id="content" placeholder="Loading content..."></textarea>
+    </div>
+
+    <div class="btn-container">
+      <span style="color: var(--text-muted); font-size: 0.85rem;">
+        Note: Changes will take about 1-2 minutes to reflect on the live page.
+      </span>
+      <button id="saveBtn" disabled>Loading Template...</button>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </div>
 
   <script>
-    const rawUrl = "https://raw.githubusercontent.com/vincecham91-png/J3K/main/2.html";
-    // Load current file content
-    fetch(rawUrl)
-      .then(r => r.text())
-      .then(txt => document.getElementById('content').value = txt)
-      .catch(err => console.error('Failed to load 2.html', err));
+    const owner = "vincecham91-png";
+    const repo = "J3K";
+    const path = "2.html";
+
+    // Safe Base64 encoding for UTF-8
+    function utf8_to_b64(str) {
+      return window.btoa(unescape(encodeURIComponent(str)));
+    }
+
+    // Load initial content
+    async function loadInitialContent() {
+      const contentEl = document.getElementById('content');
+      const saveBtn = document.getElementById('saveBtn');
+      const msgEl = document.getElementById('msg');
+
+      try {
+        // Try relative path first (very fast, bypasses rate limits)
+        const resp = await fetch('./2.html');
+        if (!resp.ok) throw new Error('Failed to fetch locally');
+        const txt = await resp.text();
+        contentEl.value = txt;
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+      } catch (err) {
+        console.warn('Local fetch failed, trying GitHub API...', err);
+        try {
+          const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
+          if (!resp.ok) throw new Error('API fetch failed');
+          const data = await resp.json();
+          // Decode base64
+          const txt = decodeURIComponent(escape(window.atob(data.content.replace(/\s/g, ''))));
+          contentEl.value = txt;
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Changes';
+        } catch (apiErr) {
+          msgEl.className = 'msg error';
+          msgEl.textContent = '❌ Failed to load the template content. Please verify your connection or repository settings.';
+          contentEl.placeholder = 'Failed to load content. Please paste the contents of 2.html here manually.';
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Changes (Manual)';
+        }
+      }
+    }
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      const pwd = document.getElementById('pwd').value.trim();
+      const token = document.getElementById('pwd').value.trim();
       const html = document.getElementById('content').value;
-      if (!pwd) { alert('Please enter the password'); return; }
-      const encoded = btoa(unescape(encodeURIComponent(html)));
+      const msgEl = document.getElementById('msg');
+      const saveBtn = document.getElementById('saveBtn');
 
-        // ---- CALL Cloudflare Worker (token stored securely) ----
-        const workerUrl = "https://<YOUR_WORKER_SUBDOMAIN>.workers.dev";
-        const resp = await fetch(workerUrl, {
-          method: 'POST',
+      if (!token) {
+        alert('Please enter your GitHub Personal Access Token (PAT) as the password.');
+        return;
+      }
+
+      msgEl.className = 'msg loading';
+      msgEl.textContent = '⏳ Fetching latest file version details from GitHub...';
+      saveBtn.disabled = true;
+
+      try {
+        // 1. Get current SHA of the file (required for update)
+        const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+        const getResp = await fetch(getUrl, {
           headers: {
-            'Content-Type': 'application/json'
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github+json'
+          }
+        });
+
+        if (!getResp.ok) {
+          if (getResp.status === 401 || getResp.status === 403) {
+            throw new Error('Invalid GitHub token. Please verify your Personal Access Token.');
+          }
+          throw new Error(`Failed to get file metadata (Status: ${getResp.status})`);
+        }
+
+        const fileData = await getResp.json();
+        const sha = fileData.sha;
+
+        // 2. Perform the update via PUT request
+        msgEl.textContent = '⏳ Saving changes and committing to GitHub...';
+        const putResp = await fetch(getUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github+json'
           },
           body: JSON.stringify({
-            ref: 'main',
-            inputs: { password: pwd, content: encoded }
+            message: 'Update 2.html via browser editor',
+            content: utf8_to_b64(html),
+            sha: sha,
+            branch: 'main'
           })
         });
-      const msgEl = document.getElementById('msg');
-      if (resp.ok) {
-        msgEl.style.color = 'green';
-        msgEl.textContent = '✅ Changes submitted. The page will rebuild in a minute.';
-      } else {
-        const err = await resp.text();
-        msgEl.style.color = 'red';
-        msgEl.textContent = `❌ Failed: ${resp.status} – ${err}`;
+
+        if (!putResp.ok) {
+          const putErrData = await putResp.json().catch(() => ({}));
+          throw new Error(putErrData.message || `Failed to commit changes (Status: ${putResp.status})`);
+        }
+
+        msgEl.className = 'msg success';
+        msgEl.innerHTML = '✅ <strong>Changes saved successfully!</strong><br/>The changes have been pushed to GitHub. The live page will rebuild automatically in about 1-2 minutes.';
+      } catch (err) {
+        msgEl.className = 'msg error';
+        msgEl.textContent = `❌ Error: ${err.message}`;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
       }
     });
+
+    // Run
+    loadInitialContent();
   </script>
 </body>
 </html>
