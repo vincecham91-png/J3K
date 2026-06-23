@@ -248,6 +248,38 @@
         .btn-sync:hover {
             background-color: #2B6CB0;
         }
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #2E7D32;
+            background: #E8F5E9;
+            border: 1px solid #A5D6A7;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-weight: 600;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #2E7D32;
+            border-radius: 50%;
+            animation: pulse-live 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .pull-status {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 6px;
+        }
+        .highlight-updated {
+            background-color: #FFFDE7 !important;
+            transition: background-color 2s ease;
+        }
     </style>
 </head>
 <body>
@@ -257,10 +289,14 @@
     </div>
     <div class="edit-link" style="margin: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
         <div class="sync-panel" style="margin: 0; flex-grow: 1; text-align: left; margin-right: 15px;">
-            <span id="syncStatus">Checking sync status...</span>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span id="syncStatus">Checking sync status...</span>
+                <span class="live-badge"><span class="live-dot"></span> LIVE AUTO-SYNC</span>
+            </div>
+            <div class="pull-status" id="pullStatus">⏳ 正在连接云端... / Connecting to cloud...</div>
             <div id="syncControls" style="display: none; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                <input type="password" id="syncPassword" placeholder="输入密码同步到云端 (例如 12345) / Enter password" class="sync-input" />
-                <button class="btn-sync" onclick="syncWithGitHub()">同步到云端 / Sync to Cloud</button>
+                <input type="password" id="syncPassword" oninput="sessionStorage.setItem('J3K_sync_password', this.value.trim()); triggerAutoSync()" placeholder="输入密码自动同步到云端 (例如 12345) / Enter password" class="sync-input" />
+                <button class="btn-sync" onclick="syncWithGitHub(false)">同步到云端 / Sync to Cloud</button>
             </div>
         </div>
         <a href="https://github.com/vincecham91-png/J3K/edit/main/2.html" target="_blank" style="font-size: 14px; color: #2F5597; text-decoration: none;">✏️ Edit Template</a>
@@ -383,7 +419,7 @@
                 <td class="student-name">${student.name}</td>
                 <td class="col-center">${photoHtml}</td>
                 <td>
-                    <textarea id="textarea-${idx}" oninput="handleInput(${idx})" placeholder="输入评语 / Sila masukkan maklum balas..."></textarea>
+                    <textarea id="textarea-${idx}" oninput="handleInput(${idx})" onblur="triggerImmediateAutoSync()" placeholder="输入评语 / Sila masukkan maklum balas..."></textarea>
                 </td>
                 <td class="col-center">
                     <input type="checkbox" id="checkbox-${idx}">
@@ -396,6 +432,9 @@
         window.onload = function() {
             mergeDatabaseOnLoad();
             loadSubjectData();
+            // Start live pull: immediate first pull, then every 60 seconds
+            pullRemoteChanges();
+            setInterval(pullRemoteChanges, 60000);
         };
 
         function getCurrentSubject() {
@@ -422,6 +461,7 @@
             }
             recalculateProgress();
             updateSyncStatus();
+            triggerAutoSync();
         }
 
         // Swaps views when the subject dropdown is changed
@@ -431,6 +471,14 @@
 
         function loadSubjectData() {
             const currentSubject = getCurrentSubject();
+            
+            // Restore password from sessionStorage if available
+            const savedPwd = sessionStorage.getItem('J3K_sync_password');
+            if (savedPwd) {
+                const pwdInput = document.getElementById('syncPassword');
+                if (pwdInput) pwdInput.value = savedPwd;
+            }
+
             students.forEach((student, idx) => {
                 const storageKey = `${student.name}_${currentSubject}`;
                 
@@ -517,31 +565,36 @@
             }
         }
 
-        async function syncWithGitHub() {
+        async function syncWithGitHub(isAuto = false) {
             const passwordInput = document.getElementById('syncPassword').value.trim();
             const statusEl = document.getElementById('syncStatus');
             
             if (!passwordInput) {
-                alert('Please enter the password to sync.');
+                if (!isAuto) {
+                    alert('Please enter the password to sync.');
+                }
                 return;
             }
+
+            // Save to sessionStorage for persistence across loads
+            sessionStorage.setItem('J3K_sync_password', passwordInput);
             
-            const token = decryptToken(passwordInput);
-            statusEl.innerHTML = `⏳ 正在连接 GitHub 并验证密码...`;
+            isSyncing = true;
+            statusEl.innerHTML = isAuto ? `⏳ 正在后台自动同步到云端... / Autosyncing...` : `⏳ 正在连接 GitHub 并验证密码...`;
             
             try {
                 // 1. Get the current file content & SHA from GitHub to make sure we don't overwrite others' work
                 const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
                 const getResp = await fetch(getUrl, {
                   headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `token ${decryptToken(passwordInput)}`,
                     'Accept': 'application/vnd.github+json'
                   }
                 });
 
                 if (!getResp.ok) {
                   if (getResp.status === 401 || getResp.status === 403) {
-                    throw new Error('密码错误，请检查！ / Invalid Password. Please check your password and try again.');
+                    throw new Error('密码错误，请检查！ / Invalid Password.');
                   }
                   throw new Error(`无法连接 GitHub / Failed to connect to GitHub (Status: ${getResp.status})`);
                 }
@@ -600,13 +653,13 @@
                   return window.btoa(unescape(encodeURIComponent(str)));
                 }
                 
-                statusEl.innerHTML = `⏳ 正在合并所有老师的评语并上传...`;
+                statusEl.innerHTML = isAuto ? `⏳ 正在后台自动同步到云端... / Autosyncing...` : `⏳ 正在合并所有老师的评语并上传...`;
                 
                 // 2. Perform the update via PUT request
                 const putResp = await fetch(getUrl, {
                   method: 'PUT',
                   headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `token ${decryptToken(passwordInput)}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/vnd.github+json'
                   },
@@ -627,13 +680,57 @@
                 Object.assign(feedbackDatabase, mergedDb);
                 localStorage.setItem('J3K_synced_db', JSON.stringify(feedbackDatabase));
 
-                statusEl.innerHTML = `🟢 <strong>同步成功！</strong> 所有评语已成功保存到云端并与他人共享。`;
+                statusEl.innerHTML = isAuto ? `✅ <strong>自动同步成功！</strong>` : `🟢 <strong>同步成功！</strong> 所有评语已成功保存到云端并与他人共享。`;
                 setTimeout(() => {
                     updateSyncStatus();
                 }, 3000);
 
             } catch (err) {
-                statusEl.innerHTML = `❌ <strong>同步失败:</strong> ${err.message}`;
+                statusEl.innerHTML = isAuto ? `⚠️ 自动同步失败 (请检查密码) / Autosync failed: ${err.message}` : `❌ <strong>同步失败:</strong> ${err.message}`;
+            } finally {
+                isSyncing = false;
+            }
+        }
+
+        let syncTimeout = null;
+        let isSyncing = false;
+
+        function triggerAutoSync() {
+            const pwdInput = document.getElementById('syncPassword');
+            if (pwdInput) {
+                const pwd = pwdInput.value.trim();
+                if (pwd) {
+                    sessionStorage.setItem('J3K_sync_password', pwd);
+                }
+            }
+
+            if (isSyncing) return;
+            
+            clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => {
+                const pwdInput = document.getElementById('syncPassword');
+                const pwd = pwdInput ? pwdInput.value.trim() : "";
+                if (pwd && hasUnsyncedChanges() && !isSyncing) {
+                    syncWithGitHub(true);
+                }
+            }, 10000); // 10 seconds debounce
+        }
+
+        function triggerImmediateAutoSync() {
+            const pwdInput = document.getElementById('syncPassword');
+            if (pwdInput) {
+                const pwd = pwdInput.value.trim();
+                if (pwd) {
+                    sessionStorage.setItem('J3K_sync_password', pwd);
+                }
+            }
+
+            if (isSyncing || !hasUnsyncedChanges()) return;
+
+            clearTimeout(syncTimeout);
+            const pwd = pwdInput ? pwdInput.value.trim() : "";
+            if (pwd && !isSyncing) {
+                syncWithGitHub(true);
             }
         }
 
@@ -662,6 +759,97 @@
             });
 
             localStorage.setItem('J3K_synced_db', JSON.stringify(feedbackDatabase));
+        }
+
+        // --- Live Pull: fetch latest data from GitHub and update UI in real time ---
+        let isPulling = false;
+        
+        async function pullRemoteChanges() {
+            if (isPulling) return;
+            isPulling = true;
+            const pullStatusEl = document.getElementById('pullStatus');
+
+            try {
+                // Use raw GitHub URL (no auth needed for public repo read)
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}?nocache=${Date.now()}`;
+                const resp = await fetch(rawUrl);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+                const remoteContent = await resp.text();
+
+                // Extract feedbackDatabase from fetched HTML
+                const dbRegex = /const\s+feedbackDatabase\s*=\s*(\{[\s\S]*?\});/;
+                const match = remoteContent.match(dbRegex);
+                if (!match) throw new Error('Parse error');
+
+                let remoteDb = {};
+                try { remoteDb = JSON.parse(match[1]); } catch(e) { throw new Error('JSON parse error'); }
+
+                const currentSubject = getCurrentSubject();
+                let updatedCount = 0;
+
+                // For each student: if remote has a value that differs from what we see,
+                // and the teacher on this device hasn't locally overridden it, update the UI.
+                students.forEach((student, idx) => {
+                    subjectsList.forEach(subj => {
+                        const storageKey = `${student.name}_${subj}`;
+                        const remoteVal = (remoteDb[student.name] && remoteDb[student.name][subj]) || "";
+                        const localVal  = localStorage.getItem(storageKey) || "";
+
+                        if (remoteVal !== localVal) {
+                            // Only overwrite if local value matches our last known synced value
+                            // (i.e., the teacher hasn't typed something new locally)
+                            const syncedDb = JSON.parse(localStorage.getItem('J3K_synced_db') || '{}');
+                            const syncedVal = (syncedDb[student.name] && syncedDb[student.name][subj]) || "";
+                            if (localVal === syncedVal) {
+                                // Remote is newer — apply it
+                                localStorage.setItem(storageKey, remoteVal);
+
+                                // If we're currently viewing this subject, update the textarea live
+                                if (subj === currentSubject) {
+                                    const textarea = document.getElementById(`textarea-${idx}`);
+                                    if (textarea && textarea.value !== remoteVal) {
+                                        textarea.value = remoteVal;
+                                        // Flash yellow to indicate a live update
+                                        textarea.classList.add('highlight-updated');
+                                        setTimeout(() => textarea.classList.remove('highlight-updated'), 2500);
+                                        updatedCount++;
+                                        // Update checkbox and row state
+                                        const checkbox = document.getElementById(`checkbox-${idx}`);
+                                        const row = document.getElementById(`student-row-${idx}`);
+                                        if (remoteVal.trim().length > 0) {
+                                            checkbox.checked = true;
+                                            row.classList.add('row-complete');
+                                        } else {
+                                            checkbox.checked = false;
+                                            row.classList.remove('row-complete');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+
+                // Update the in-memory database baseline
+                Object.assign(feedbackDatabase, remoteDb);
+                localStorage.setItem('J3K_synced_db', JSON.stringify(remoteDb));
+
+                recalculateProgress();
+                updateSyncStatus();
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                pullStatusEl.innerHTML = updatedCount > 0
+                    ? `🟢 <strong>云端有新更新！已自动刷新 ${updatedCount} 条评语。</strong> 最后更新时间: ${timeStr} / Updated ${updatedCount} field(s) at ${timeStr}`
+                    : `✅ 已是最新数据 / Up to date — 最后检查: ${timeStr}`;
+
+            } catch (err) {
+                const pullStatusEl2 = document.getElementById('pullStatus');
+                if (pullStatusEl2) pullStatusEl2.innerHTML = `⚠️ 无法连接云端 / Could not reach cloud: ${err.message}`;
+            } finally {
+                isPulling = false;
+            }
         }
 
         // Option A: Export only the active isolated subject
