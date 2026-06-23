@@ -394,6 +394,7 @@
 
         // Load data on start
         window.onload = function() {
+            mergeDatabaseOnLoad();
             loadSubjectData();
         };
 
@@ -622,14 +623,45 @@
                   throw new Error(putErrData.message || `Failed to commit changes (Status: ${putResp.status})`);
                 }
                 
-                statusEl.innerHTML = `🟢 <strong>同步成功！</strong> 正在重新加载页面...`;
+                // Update baseline synced DB in localStorage so it matches what we just synced
+                Object.assign(feedbackDatabase, mergedDb);
+                localStorage.setItem('J3K_synced_db', JSON.stringify(feedbackDatabase));
+
+                statusEl.innerHTML = `🟢 <strong>同步成功！</strong> 所有评语已成功保存到云端并与他人共享。`;
                 setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                    updateSyncStatus();
+                }, 3000);
 
             } catch (err) {
                 statusEl.innerHTML = `❌ <strong>同步失败:</strong> ${err.message}`;
             }
+        }
+
+        function mergeDatabaseOnLoad() {
+            let oldDb = {};
+            try {
+                oldDb = JSON.parse(localStorage.getItem('J3K_synced_db') || '{}');
+            } catch (e) {
+                console.error("Failed to parse old db from localStorage", e);
+            }
+
+            students.forEach(student => {
+                subjectsList.forEach(subj => {
+                    const storageKey = `${student.name}_${subj}`;
+                    const localVal = localStorage.getItem(storageKey);
+                    
+                    const oldDbVal = (oldDb[student.name] && oldDb[student.name][subj]) || "";
+                    const newDbVal = (feedbackDatabase[student.name] && feedbackDatabase[student.name][subj]) || "";
+
+                    if (localVal === null) {
+                        localStorage.setItem(storageKey, newDbVal);
+                    } else if (localVal === oldDbVal) {
+                        localStorage.setItem(storageKey, newDbVal);
+                    }
+                });
+            });
+
+            localStorage.setItem('J3K_synced_db', JSON.stringify(feedbackDatabase));
         }
 
         // Option A: Export only the active isolated subject
