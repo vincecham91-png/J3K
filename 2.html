@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J3K 初三仁 - Teacher Data Entry Form</title>
+    <style>
+        :root {
+            --primary-bg: #1F4E79;
+            --accent-bg: #D9E1F2;
+            --header-table: #2F5597;
+            --zebra-light: #F2F4F7;
+            --success-green: #2E7D32;
+            --alert-red: #FFCDD2;
+            --text-dimmed: #B2B2B2;
+            --border-grey: #E0E0E0;
+            --btn-primary: #2F5597;
+            --btn-hover: #1F4E79;
+        }
+
+        body {
+            font-family: 'Segoe UI', Inter, Tahoma, sans-serif;
+            margin: 20px;
+            background-color: #fcfcfc;
+            color: #333333;
+        }
+
+        .main-title {
+            background-color: var(--primary-bg);
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            border-radius: 6px 6px 0 0;
+            margin-bottom: 0;
+        }
+
+        .control-panel {
+            background-color: var(--accent-bg);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-grey);
+            font-size: 14px;
+        }
+
+        .subject-dropdown {
+            padding: 6px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid var(--border-grey);
+            font-family: inherit;
+        }
+
+        .tracker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-outer {
+            width: 250px;
+            background-color: var(--alert-red);
+            border-radius: 4px;
+            height: 16px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .progress-inner {
+            width: 0%;
+            height: 100%;
+            background-color: var(--success-green);
+            transition: width 0.3s ease-in-out;
+        }
+
+        .table-container {
+            margin-top: 15px;
+            background-color: #FFFFFF;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--header-table);
+            color: #FFFFFF;
+            font-weight: bold;
+            padding: 12px;
+            font-size: 14px;
+            text-align: left;
+            border: 1px solid var(--border-grey);
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid var(--border-grey);
+            vertical-align: middle;
+            height: 100px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--zebra-light);
+        }
+
+        tr.row-complete td {
+            color: var(--text-dimmed) !important;
+        }
+
+        tr.row-complete textarea {
+            background-color: #FAFAFA;
+            border-color: #A5D6A7;
+        }
+
+        .col-center {
+            text-align: center;
+        }
+
+        .student-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .student-photo {
+            width: 70px;
+            height: 90px;
+            object-fit: cover;
+            border: 1px solid var(--border-grey);
+            border-radius: 4px;
+            display: block;
+            margin: 0 auto;
+            background-color: #EAEDED;
+        }
+
+        .no-photo-placeholder {
+            width: 70px;
+            height: 90px;
+            background-color: #EAEDED;
+            border: 1px dashed #BDC3C7;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #7F8C8D;
+            border-radius: 4px;
+        }
+
+        textarea {
+            width: 98%;
+            height: 80px;
+            padding: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            border: 1px solid var(--border-grey);
+            border-radius: 4px;
+            resize: none;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.4);
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .export-panel {
+            margin-top: 20px;
+            padding: 15px 20px;
+            background-color: #F8F9FA;
+            border: 1px solid var(--border-grey);
+            border-radius: 6px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .export-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4A5568;
+            margin-right: auto;
+        }
+
+        .btn-export {
+            background-color: var(--btn-primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-export:hover {
+            background-color: var(--btn-hover);
+        }
+
+        .btn-export-secondary {
+            background-color: #4A5568;
+        }
+
+        .btn-export-secondary:hover {
+            background-color: #2D3748;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-title">
+        班级整体表现评估 / LAPORAN PRESTASI KELAS J3K 初三仁
+    </div>
+
+    <div class="control-panel">
+        <div>
+            <strong>科目 / Subjek:</strong> 
+            <select class="subject-dropdown" id="subjectSelector" onchange="switchSubject()">
+                <option value="Math">Math / 数学 / Matematik</option>
+                <option value="English">English / 英语 / Bahasa Inggeris</option>
+                <option value="Malay">Malay / 马来语 / Bahasa Melayu</option>
+                <option value="Chinese">Chinese / 华语 / Bahasa Cina</option>
+                <option value="History">History / 历史 / Sejarah</option>
+                <option value="Geography">Geography / 地理 / Geografi</option>
+                <option value="Science">Science / 科学 / Sains</option>
+                <option value="Art">Art / 美术 / Pendidikan Seni Visual</option>
+                <option value="Computer">Computer / 电脑 / Komputer</option>
+                <option value="Robotics">Robotics / 机器人 / Robotik</option>
+            </select>
+        </div>
+        <div class="tracker-wrapper">
+            <strong>当前科目进度 / Progress:</strong>
+            <div class="progress-outer">
+                <div class="progress-inner" id="statusBar"></div>
+            </div>
+            <span id="counterLabel" style="font-weight: bold;">0 / 17</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 60px;" class="col-center">No. / 序号</th>
+                    <th style="width: 250px;">Student Name / 学生姓名 / Nama Murid</th>
+                    <th style="width: 110px;" class="col-center">Photo / 照片 / Foto</th>
+                    <th style="width: 500px;">Feedback on Overall Learning / 整体学习反馈 / Maklum Balas Keseluruhan</th>
+                    <th style="width: 100px;" class="col-center">Status / 状态</th>
+                </tr>
+            </thead>
+            <tbody id="studentGrid">
+                <!-- Data loaded dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="export-panel">
+        <span class="export-title">数据导出选项 / Opsyen Eksport Data:</span>
+        <button class="btn-export btn-export-secondary" onclick="exportByStudentAllSubjects()">
+            按学生导出 (所有科目) / Eksport Mengikut Murid (Semua Subjek)
+        </button>
+        <button class="btn-export" onclick="exportByCurrentSubject()">
+            按当前科目导出 / Eksport Mengikut Subjek Semasa
+        </button>
+    </div>
+
+    <script>
+        const students = [
+
+            { name: "TANG YU JIE (陈语捷)", photo: "24062_TANG YU JIE_2.jpg" },
+            { name: "GOH ZI HAN (吴紫涵)", photo: "25159_GOH ZI HAN.jpg" },
+            { name: "HING JIA EN (方佳恩)", photo: "24058_HING JIA EN_2.jpg" },
+            { name: "HOW TIAN QIAN (侯甜芊)", photo: "24059_HOW TIAN QIAN_2.jpg" },
+            { name: "KHOR YAN SAN (许燕珊)", photo: "24060_KHOR YAN SAN_2.jpg" },
+            { name: "LOK CI EN (陆糍恩)", photo: "24061_LOK CI EN_2.jpg" },
+            { name: "LYVIA LEE TZI QING (李紫晴)", photo: "25009 李紫晴.JPG" },
+            { name: "MISS PHICHAYA THANAKUNTHAWEE (李芊芊)", photo: "24100  MISS PHICHAYA THANAKUNTHAWEE.jpg" },
+            { name: "OOI YOU MIN (黄宥敏)", photo: "24096_OOI YOU MIN.jpg" },
+        ];
+
+        const subjectsList = ["Math", "English", "Malay", "Chinese", "History", "Geography", "Science", "Art", "Computer", "Robotics"];
+        const gridBody = document.getElementById('studentGrid');
+
+        // Initial setup and rendering
+        students.forEach((student, idx) => {
+            const tr = document.createElement('tr');
+            tr.id = `student-row-${idx}`;
+            
+            const photoHtml = student.photo
+    ? (() => {
+        const cleanName = student.photo.replace(/_2(?=\.[^.]+$)/, '');
+        return `<img src="${encodeURI('J3K photo/' + cleanName)}" class="student-photo" alt="${student.name}">`;
+      })()
+    : `<div class="no-photo-placeholder">No Photo</div>`;
+
+            tr.innerHTML = `
+                <td class="col-center">${idx + 1}</td>
+                <td class="student-name">${student.name}</td>
+                <td class="col-center">${photoHtml}</td>
+                <td>
+                    <textarea id="textarea-${idx}" oninput="handleInput(${idx})" placeholder="输入评语 / Sila masukkan maklum balas..."></textarea>
+                </td>
+                <td class="col-center">
+                    <input type="checkbox" id="checkbox-${idx}">
+                </td>
+            `;
+            gridBody.appendChild(tr);
+        });
+
+        // Load data on start
+        window.onload = function() {
+            loadSubjectData();
+        };
+
+        function getCurrentSubject() {
+            return document.getElementById('subjectSelector').value;
+        }
+
+        // Handle typing and save data live to local storage
+        function handleInput(rowId) {
+            const textInput = document.getElementById(`textarea-${rowId}`);
+            const checkbox = document.getElementById(`checkbox-${rowId}`);
+            const targetRow = document.getElementById(`student-row-${rowId}`);
+            const currentSubject = getCurrentSubject();
+            
+            // Save data key variant: "StudentName_SubjectName"
+            const storageKey = `${students[rowId].name}_${currentSubject}`;
+            localStorage.setItem(storageKey, textInput.value);
+
+            if (textInput.value.trim().length > 0) {
+                checkbox.checked = true;
+                targetRow.classList.add('row-complete');
+            } else {
+                checkbox.checked = false;
+                targetRow.classList.remove('row-complete');
+            }
+            recalculateProgress();
+        }
+
+        // Swaps views when the subject dropdown is changed
+        function switchSubject() {
+            loadSubjectData();
+        }
+
+        function loadSubjectData() {
+            const currentSubject = getCurrentSubject();
+            students.forEach((student, idx) => {
+                const storageKey = `${student.name}_${currentSubject}`;
+                const savedValue = localStorage.getItem(storageKey) || "";
+                
+                const textInput = document.getElementById(`textarea-${idx}`);
+                const checkbox = document.getElementById(`checkbox-${idx}`);
+                const targetRow = document.getElementById(`student-row-${idx}`);
+                
+                textInput.value = savedValue;
+                
+                if (savedValue.trim().length > 0) {
+                    checkbox.checked = true;
+                    targetRow.classList.add('row-complete');
+                } else {
+                    checkbox.checked = false;
+                    targetRow.classList.remove('row-complete');
+                }
+            });
+            recalculateProgress();
+        }
+
+        function recalculateProgress() {
+            const allBoxes = document.querySelectorAll('input[type="checkbox"]');
+            let completedCount = 0;
+            allBoxes.forEach(box => { if (box.checked) completedCount++; });
+
+            const currentPercentage = (completedCount / students.length) * 100;
+            document.getElementById('statusBar').style.width = `${currentPercentage}%`;
+            document.getElementById('counterLabel').innerText = `${completedCount} / ${students.length}`;
+        }
+
+        // Option A: Export only the active isolated subject
+        function exportByCurrentSubject() {
+            const currentSubject = getCurrentSubject();
+            let csvRows = [['No', 'Student Name', 'Subject', 'Feedback Comment', 'Status']];
+            
+            students.forEach((student, idx) => {
+                const storageKey = `${student.name}_${currentSubject}`;
+                const comment = (localStorage.getItem(storageKey) || "").replace(/"/g, '""');
+                const status = comment ? 'Completed' : 'Pending';
+                csvRows.push([idx + 1, `"${student.name}"`, `"${currentSubject}"`, `"${comment}"`, status]);
+            });
+
+            downloadCSV(csvRows, `Feedback_${currentSubject}_J3K.csv`);
+        }
+
+        // Option B: Multi-Subject Matrix Spreadsheet Generation
+        function exportByStudentAllSubjects() {
+            // Build out a dynamic CSV header row structured around all active subjects
+            let headerRow = ['No', 'Student Name'];
+            subjectsList.forEach(subj => {
+                headerRow.push(`${subj} Feedback`);
+            });
+            
+            let csvRows = [headerRow];
+
+            students.forEach((student, idx) => {
+                let rowData = [idx + 1, `"${student.name}"`];
+                
+                // Map out all data elements mapped to keys saved across the profile database matrix
+                subjectsList.forEach(subj => {
+                    const storageKey = `${student.name}_${subj}`;
+                    const comment = (localStorage.getItem(storageKey) || "").replace(/"/g, '""');
+                    rowData.push(`"${comment}"`);
+                });
+                
+                csvRows.push(rowData);
+            });
+
+            downloadCSV(csvRows, `Class_Master_Report_All_Subjects_J3K.csv`);
+        }
+
+        function downloadCSV(rows, fileName) {
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
