@@ -214,6 +214,40 @@
         .btn-export-secondary:hover {
             background-color: #2D3748;
         }
+        
+        /* Sync panel styles */
+        .sync-panel {
+            background-color: #F7FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-family: inherit;
+        }
+        .sync-input {
+            padding: 8px 12px;
+            border: 1px solid #CBD5E0;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 250px;
+            font-family: inherit;
+        }
+        .btn-sync {
+            background-color: #3182CE;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-family: inherit;
+        }
+        .btn-sync:hover {
+            background-color: #2B6CB0;
+        }
     </style>
 </head>
 <body>
@@ -221,7 +255,14 @@
     <div class="main-title">
         班级整体表现评估 / LAPORAN PRESTASI KELAS J3K 初三仁
     </div>
-    <div class="edit-link" style="margin: 10px 0; text-align: right;">
+    <div class="edit-link" style="margin: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div class="sync-panel" style="margin: 0; flex-grow: 1; text-align: left; margin-right: 15px;">
+            <span id="syncStatus">Checking sync status...</span>
+            <div id="syncControls" style="display: none; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                <input type="password" id="syncPassword" placeholder="输入密码同步到云端 (例如 12345) / Enter password" class="sync-input" />
+                <button class="btn-sync" onclick="syncWithGitHub()">同步到云端 / Sync to Cloud</button>
+            </div>
+        </div>
         <a href="https://github.com/vincecham91-png/J3K/edit/main/2.html" target="_blank" style="font-size: 14px; color: #2F5597; text-decoration: none;">✏️ Edit Template</a>
     </div>
 
@@ -300,6 +341,9 @@
 
         ];
 
+        // DATABASE OF SAVED FEEDBACK (DO NOT REMOVE OR MANUALLY EDIT THIS LINE)
+        const feedbackDatabase = {};
+
         const subjectsList = ["Math", "English", "Malay", "Chinese", "History", "Geography", "Science", "Art", "Computer", "Robotics"];
         const gridBody = document.getElementById('studentGrid');
 
@@ -358,6 +402,7 @@
                 targetRow.classList.remove('row-complete');
             }
             recalculateProgress();
+            updateSyncStatus();
         }
 
         // Swaps views when the subject dropdown is changed
@@ -369,7 +414,13 @@
             const currentSubject = getCurrentSubject();
             students.forEach((student, idx) => {
                 const storageKey = `${student.name}_${currentSubject}`;
-                const savedValue = localStorage.getItem(storageKey) || "";
+                
+                // Get from localStorage first, fallback to feedbackDatabase
+                let savedValue = localStorage.getItem(storageKey);
+                if (savedValue === null) {
+                    savedValue = (feedbackDatabase[student.name] && feedbackDatabase[student.name][currentSubject]) || "";
+                    localStorage.setItem(storageKey, savedValue);
+                }
                 
                 const textInput = document.getElementById(`textarea-${idx}`);
                 const checkbox = document.getElementById(`checkbox-${idx}`);
@@ -386,6 +437,7 @@
                 }
             });
             recalculateProgress();
+            updateSyncStatus();
         }
 
         function recalculateProgress() {
@@ -396,6 +448,170 @@
             const currentPercentage = (completedCount / students.length) * 100;
             document.getElementById('statusBar').style.width = `${currentPercentage}%`;
             document.getElementById('counterLabel').innerText = `${completedCount} / ${students.length}`;
+        }
+
+        // --- Git Sync System ---
+        const owner = "vincecham91-png";
+        const repo = "J3K";
+        const path = "2.html";
+        const encryptedToken = "VlpDa0cFZ2FwQkVmdW1ASWBgQl5rSgVScV50d1N2dlhKbQVga0kCbw==";
+
+        function decryptToken(inputPassword) {
+            if (!inputPassword) return "";
+            try {
+                const binary = atob(encryptedToken);
+                let decrypted = "";
+                for (let i = 0; i < binary.length; i++) {
+                    const charCode = binary.charCodeAt(i) ^ inputPassword.charCodeAt(i % inputPassword.length);
+                    decrypted += String.fromCharCode(charCode);
+                }
+                return decrypted;
+            } catch (e) {
+                return "";
+            }
+        }
+
+        function hasUnsyncedChanges() {
+            for (let student of students) {
+                for (let subj of subjectsList) {
+                    const storageKey = `${student.name}_${subj}`;
+                    const localVal = localStorage.getItem(storageKey) || "";
+                    const dbVal = (feedbackDatabase[student.name] && feedbackDatabase[student.name][subj]) || "";
+                    if (localVal !== dbVal) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function updateSyncStatus() {
+            const statusEl = document.getElementById('syncStatus');
+            const controlsEl = document.getElementById('syncControls');
+            
+            if (hasUnsyncedChanges()) {
+                statusEl.innerHTML = `⚠️ <strong>本地修改未保存到云端</strong> (仅保存在此电脑。请输入密码同步以分享给其他老师 / Unsaved changes. Please sync to share.)`;
+                controlsEl.style.display = 'flex';
+            } else {
+                statusEl.innerHTML = `✅ <strong>已与云端同步</strong> (所有输入已安全保存并与其他老师共享 / All changes synced with GitHub)`;
+                controlsEl.style.display = 'none';
+            }
+        }
+
+        async function syncWithGitHub() {
+            const passwordInput = document.getElementById('syncPassword').value.trim();
+            const statusEl = document.getElementById('syncStatus');
+            
+            if (!passwordInput) {
+                alert('Please enter the password to sync.');
+                return;
+            }
+            
+            const token = decryptToken(passwordInput);
+            statusEl.innerHTML = `⏳ 正在连接 GitHub 并验证密码...`;
+            
+            try {
+                // 1. Get the current file content & SHA from GitHub to make sure we don't overwrite others' work
+                const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+                const getResp = await fetch(getUrl, {
+                  headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github+json'
+                  }
+                });
+
+                if (!getResp.ok) {
+                  if (getResp.status === 401 || getResp.status === 403) {
+                    throw new Error('密码错误，请检查！ / Invalid Password. Please check your password and try again.');
+                  }
+                  throw new Error(`无法连接 GitHub / Failed to connect to GitHub (Status: ${getResp.status})`);
+                }
+
+                const fileData = await getResp.json();
+                const remoteSha = fileData.sha;
+                
+                // Decode the remote content
+                const remoteContent = decodeURIComponent(escape(window.atob(fileData.content.replace(/\s/g, ''))));
+                
+                // Extract the remote feedbackDatabase object from the file content
+                const dbRegex = /const\s+feedbackDatabase\s*=\s*(\{[\s\S]*?\});/;
+                const match = remoteContent.match(dbRegex);
+                if (!match) {
+                    throw new Error('解析云端数据库失败 / Could not parse the remote database structure.');
+                }
+                
+                let remoteDb = {};
+                try {
+                    remoteDb = JSON.parse(match[1]);
+                } catch (e) {
+                    console.error("Failed to parse remote JSON, using empty database", e);
+                }
+                
+                // Merge local storage changes into the remote database
+                const mergedDb = { ...remoteDb };
+                
+                students.forEach(student => {
+                    if (!mergedDb[student.name]) {
+                        mergedDb[student.name] = {};
+                    }
+                    subjectsList.forEach(subj => {
+                        const storageKey = `${student.name}_${subj}`;
+                        const localVal = localStorage.getItem(storageKey) || "";
+                        
+                        if (localVal) {
+                            mergedDb[student.name][subj] = localVal;
+                        } else if (mergedDb[student.name][subj]) {
+                            delete mergedDb[student.name][subj];
+                        }
+                    });
+                    
+                    if (Object.keys(mergedDb[student.name]).length === 0) {
+                        delete mergedDb[student.name];
+                    }
+                });
+                
+                // Format the database object as clean string
+                const dbString = JSON.stringify(mergedDb, null, 4);
+                
+                // Replace the feedbackDatabase in the remote content
+                const updatedContent = remoteContent.replace(dbRegex, `const feedbackDatabase = ${dbString};`);
+                
+                // Base64 encode safe for UTF-8
+                function utf8_to_b64(str) {
+                  return window.btoa(unescape(encodeURIComponent(str)));
+                }
+                
+                statusEl.innerHTML = `⏳ 正在合并所有老师的评语并上传...`;
+                
+                // 2. Perform the update via PUT request
+                const putResp = await fetch(getUrl, {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github+json'
+                  },
+                  body: JSON.stringify({
+                    message: 'Sync teacher feedback comments',
+                    content: utf8_to_b64(updatedContent),
+                    sha: remoteSha,
+                    branch: 'main'
+                  })
+                });
+
+                if (!putResp.ok) {
+                  const putErrData = await putResp.json().catch(() => ({}));
+                  throw new Error(putErrData.message || `Failed to commit changes (Status: ${putResp.status})`);
+                }
+                
+                statusEl.innerHTML = `🟢 <strong>同步成功！</strong> 正在重新加载页面...`;
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+
+            } catch (err) {
+                statusEl.innerHTML = `❌ <strong>同步失败:</strong> ${err.message}`;
+            }
         }
 
         // Option A: Export only the active isolated subject
