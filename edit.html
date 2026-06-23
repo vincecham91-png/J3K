@@ -191,8 +191,8 @@
     <p class="subtitle">Update the content of <code>2.html</code> directly on GitHub Pages</p>
 
     <div class="input-group">
-      <label for="pwd">GitHub Personal Access Token (PAT) / 密码:</label>
-      <input type="password" id="pwd" placeholder="Enter your GitHub PAT (ghp_...)" />
+      <label for="pwd">Password / 密码:</label>
+      <input type="password" id="pwd" placeholder="Enter password (e.g., 12345)" />
     </div>
 
     <div class="input-group">
@@ -255,16 +255,39 @@
       }
     }
 
+    const encryptedToken = "VlpDa0cFZ2FwQkVmdW1ASWBgQl5rSgVScV50d1N2dlhKbQVga0kCbw==";
+
+    function decryptToken(inputPassword) {
+      if (!inputPassword) return "";
+      // If the user pasted a raw GitHub token instead of the password, use it directly
+      if (inputPassword.startsWith("ghp_") || inputPassword.startsWith("github_pat_")) {
+        return inputPassword;
+      }
+      try {
+        const binary = atob(encryptedToken);
+        let decrypted = "";
+        for (let i = 0; i < binary.length; i++) {
+          const charCode = binary.charCodeAt(i) ^ inputPassword.charCodeAt(i % inputPassword.length);
+          decrypted += String.fromCharCode(charCode);
+        }
+        return decrypted;
+      } catch (e) {
+        return "";
+      }
+    }
+
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      const token = document.getElementById('pwd').value.trim();
+      const passwordInput = document.getElementById('pwd').value.trim();
       const html = document.getElementById('content').value;
       const msgEl = document.getElementById('msg');
       const saveBtn = document.getElementById('saveBtn');
 
-      if (!token) {
-        alert('Please enter your GitHub Personal Access Token (PAT) as the password.');
+      if (!passwordInput) {
+        alert('Please enter the password.');
         return;
       }
+
+      const token = decryptToken(passwordInput);
 
       msgEl.className = 'msg loading';
       msgEl.textContent = '⏳ Fetching latest file version details from GitHub...';
@@ -282,7 +305,7 @@
 
         if (!getResp.ok) {
           if (getResp.status === 401 || getResp.status === 403) {
-            throw new Error('Invalid GitHub token. Please verify your Personal Access Token.');
+            throw new Error('Invalid Password. Please check your password and try again.');
           }
           throw new Error(`Failed to get file metadata (Status: ${getResp.status})`);
         }
