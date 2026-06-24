@@ -1,0 +1,8 @@
+.wrangler/
+node_modules/
+.gemini/
+*.xlsx
+xlsx_tmp/
+xlsx_contents/
+scripts/0002_seed.sql
+.github/

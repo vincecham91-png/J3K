@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>华联中学 — 评语录入</title>
+  <meta name="description" content="华联中学教师评语录入页面">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-primary:                  #1a56db;
+      --pico-primary-background:       #1a56db;
+      --pico-primary-hover:            #1e40af;
+      --pico-primary-hover-background: #1e40af;
+    }
+
+    body { font-family: 'Segoe UI', Inter, Tahoma, sans-serif; background: #f8fafc; }
+
+    /* ── Header ── */
+    .app-header {
+      background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
+      color: white;
+      padding: 0.85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(26,86,219,0.25);
+    }
+    .app-header h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
+    .app-header .meta { font-size: 0.78rem; opacity: 0.85; }
+    .header-right { display: flex; align-items: center; gap: 0.75rem; }
+    .teacher-badge {
+      background: rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .btn-logout {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: white; border-radius: 6px;
+      padding: 5px 12px; font-size: 0.8rem;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Subject Tabs ── */
+    .tabs-bar {
+      background: white;
+      border-bottom: 2px solid #e5e7eb;
+      display: flex; overflow-x: auto;
+      scrollbar-width: none;
+      padding: 0 1rem;
+      gap: 0;
+    }
+    .tabs-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      background: none; border: none; border-bottom: 3px solid transparent;
+      padding: 0.75rem 1.1rem; font-size: 0.82rem; font-weight: 600;
+      color: #6b7280; cursor: pointer; white-space: nowrap;
+      transition: all 0.2s; margin-bottom: -2px;
+    }
+    .tab-btn:hover { color: var(--pico-primary); }
+    .tab-btn.active { color: var(--pico-primary); border-bottom-color: var(--pico-primary); }
+    .tab-btn .badge {
+      display: inline-block; background: #e5e7eb; color: #374151;
+      border-radius: 10px; padding: 1px 7px; font-size: 0.72rem;
+      margin-left: 5px; transition: all 0.2s;
+    }
+    .tab-btn.active .badge { background: #dbeafe; color: var(--pico-primary); }
+    .tab-btn .badge.done { background: #dcfce7; color: #16a34a; }
+
+    /* ── Progress Bar ── */
+    .progress-bar-wrap {
+      background: white; padding: 0.75rem 1.5rem;
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      border-bottom: 1px solid #e5e7eb; font-size: 0.85rem;
+    }
+    .progress-bar-wrap progress { flex: 1; min-width: 180px; }
+    .save-status {
+      font-size: 0.8rem; color: #6b7280;
+      min-width: 200px; text-align: right;
+    }
+    .save-status.saving  { color: #d97706; }
+    .save-status.saved   { color: #16a34a; }
+    .save-status.error   { color: #dc2626; }
+
+    /* ── Student Table ── */
+    .container { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+
+    .student-table { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+    table { margin: 0; border-collapse: collapse; width: 100%; }
+    th {
+      background: #1a56db; color: white;
+      font-size: 0.82rem; padding: 0.75rem 0.9rem;
+      font-weight: 700; text-align: left;
+    }
+    td { padding: 0.7rem 0.9rem; vertical-align: middle; font-size: 0.88rem; border-bottom: 1px solid #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #fafafa; }
+    tr:hover td { background: #f0f4ff; transition: background 0.15s; }
+    tr.row-done td { background: #f0fdf4 !important; }
+
+    .student-photo {
+      width: 54px; height: 54px; border-radius: 50%;
+      object-fit: cover; border: 2px solid #e5e7eb;
+      display: block;
+    }
+    .no-photo {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: #1a56db;
+    }
+
+    .col-no    { width: 45px;  text-align: center; color: #9ca3af; font-size: 0.8rem; }
+    .col-name  { min-width: 160px; font-weight: 600; font-size: 0.85rem; }
+    .col-photo { width: 72px;  text-align: center; }
+    .col-fb    { min-width: 320px; }
+    .col-done  { width: 80px;  text-align: center; }
+
+    .feedback-area {
+      width: 100%; min-height: 70px; resize: vertical;
+      border: 1px solid #d1d5db; border-radius: 6px;
+      padding: 0.5rem 0.7rem; font-size: 0.85rem;
+      font-family: inherit; transition: border 0.2s;
+      box-sizing: border-box;
+    }
+    .feedback-area:focus { outline: none; border-color: var(--pico-primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+
+    .done-check { width: 20px; height: 20px; accent-color: #16a34a; cursor: pointer; }
+
+    /* ── Mark All button ── */
+    .toolbar {
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: white; border-bottom: 1px solid #e5e7eb;
+    }
+    .btn-mark {
+      background: #16a34a; color: white; border: none;
+      border-radius: 6px; padding: 6px 16px; font-size: 0.82rem;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-mark:hover { background: #15803d; }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; font-size: 1rem; color: #1a56db; gap: 1rem;
+    }
+    .loading-overlay .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #dbeafe; border-top-color: #1a56db;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <span>正在加载数据... / Loading...</span>
+  </div>
+
+  <!-- App Header -->
+  <div class="app-header">
+    <div>
+      <h1>🏫 华联中学 · Hua Lian High School</h1>
+      <div class="meta">J3K 初三仁 · 2026 · 教师评语系统</div>
+    </div>
+    <div class="header-right">
+      <span class="teacher-badge" id="teacherName">—</span>
+      <button class="btn-logout" onclick="logout()">退出 / Logout</button>
+    </div>
+  </div>
+
+  <!-- Subject Tabs -->
+  <div class="tabs-bar" id="tabsBar"></div>
+
+  <!-- Progress + Save Status -->
+  <div class="progress-bar-wrap">
+    <strong style="font-size:0.82rem">进度 / Progress:</strong>
+    <progress id="progressBar" value="0" max="17"></progress>
+    <span id="progressLabel" style="font-weight:700;color:#1a56db">0 / 17</span>
+    <span class="save-status" id="saveStatus">✅ 就绪 / Ready</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn-mark" onclick="markAllComplete()">✔ 全部完成 / Mark All Done</button>
+  </div>
+
+  <!-- Student Table -->
+  <div class="container">
+    <div class="student-table">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-no">No.</th>
+            <th class="col-photo" style="text-align:center">照片 / Photo</th>
+            <th class="col-name">学生姓名 / Student Name</th>
+            <th class="col-fb">评语 / Feedback Comment</th>
+            <th class="col-done">完成 / Done</th>
+          </tr>
+        </thead>
+        <tbody id="studentGrid"></tbody>
+      </table>
+    </div>
+
+    <footer style="text-align:center;color:#9ca3af;font-size:0.75rem;padding:1.5rem 0">
+      © 2026 华联中学 · Hua Lian High School · 评语系统
+    </footer>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/report-api.js"></script>
+  <script>
+    // ── Auth Guard ────────────────────────────────────────────────
+    const currentUser = requireAuth();
+    if (!currentUser) throw new Error('Not authenticated');
+
+    document.getElementById('teacherName').textContent = currentUser.display_name;
+
+    // ── State ─────────────────────────────────────────────────────
+    let subjectsData = [];  // [{ code, display_name, students: [...] }]
+    let currentIdx   = 0;
+    let saveTimers   = {};  // rowId -> setTimeout handle
+
+    // ── Load Data ─────────────────────────────────────────────────
+    async function init() {
+      try {
+        const data   = await getMyReports();
+        subjectsData = data.subjects;
+        renderTabs();
+        switchTab(0);
+        document.getElementById('loadingOverlay').style.display = 'none';
+      } catch (err) {
+        document.getElementById('loadingOverlay').innerHTML =
+          `<p style="color:#dc2626">❌ 加载失败: ${err.message}<br><a href="teacher-login.html">重新登录</a></p>`;
+      }
+    }
+
+    // ── Tabs ──────────────────────────────────────────────────────
+    function renderTabs() {
+      const bar = document.getElementById('tabsBar');
+      bar.innerHTML = '';
+      subjectsData.forEach((subj, i) => {
+        const completed = subj.students.filter(s => s.is_complete).length;
+        const total     = subj.students.length;
+        const allDone   = completed === total && total > 0;
+        const btn = document.createElement('button');
+        btn.className   = 'tab-btn' + (i === 0 ? ' active' : '');
+        btn.id          = `tab-${i}`;
+        btn.onclick     = () => switchTab(i);
+        btn.innerHTML   = `${subj.display_name.split(' / ')[0]}
+          <span class="badge ${allDone ? 'done' : ''}">${completed}/${total}</span>`;
+        bar.appendChild(btn);
+      });
+    }
+
+    function switchTab(idx) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`tab-${idx}`);
+      if (btn) btn.classList.add('active');
+      currentIdx = idx;
+      renderGrid();
+      updateProgress();
+    }
+
+    // ── Grid ──────────────────────────────────────────────────────
+    function renderGrid() {
+      const subj    = subjectsData[currentIdx];
+      const grid    = document.getElementById('studentGrid');
+      grid.innerHTML = '';
+
+      subj.students.forEach((st, i) => {
+        const tr = document.createElement('tr');
+        tr.id    = `row-${i}`;
+        if (st.is_complete) tr.classList.add('row-done');
+
+        const photoHtml = st.photo_url
+          ? `<img src="${st.photo_url}" class="student-photo" alt="${st.name}" onerror="this.outerHTML='<div class=no-photo>👤</div>'">`
+          : `<div class="no-photo">👤</div>`;
+
+        tr.innerHTML = `
+          <td class="col-no">${i + 1}</td>
+          <td class="col-photo" style="text-align:center">${photoHtml}</td>
+          <td class="col-name">${st.name}</td>
+          <td class="col-fb">
+            <textarea
+              class="feedback-area"
+              id="fb-${i}"
+              placeholder="输入评语 / Enter feedback..."
+              oninput="handleInput(${i})"
+              onblur="flushSave(${i})"
+            >${escapeHtml(st.feedback || '')}</textarea>
+          </td>
+          <td class="col-done">
+            <input type="checkbox" class="done-check" id="chk-${i}"
+              ${st.is_complete ? 'checked' : ''}
+              onchange="handleCheckbox(${i})">
+          </td>
+        `;
+        grid.appendChild(tr);
+      });
+    }
+
+    // ── Input Handling & Autosave ─────────────────────────────────
+    function handleInput(idx) {
+      const val     = document.getElementById(`fb-${idx}`).value;
+      const checked = val.trim().length > 0;
+      const chk     = document.getElementById(`chk-${idx}`);
+      const row     = document.getElementById(`row-${idx}`);
+
+      chk.checked = checked;
+      if (checked) row.classList.add('row-done');
+      else         row.classList.remove('row-done');
+
+      // Update in-memory
+      subjectsData[currentIdx].students[idx].feedback    = val;
+      subjectsData[currentIdx].students[idx].is_complete = checked ? 1 : 0;
+
+      updateProgress();
+      updateTabBadge();
+
+      // Debounced save (1.5s after typing stops)
+      clearTimeout(saveTimers[idx]);
+      setSaveStatus('saving', '⏳ 正在保存... / Saving...');
+      saveTimers[idx] = setTimeout(() => flushSave(idx), 1500);
+    }
+
+    function handleCheckbox(idx) {
+      const chk    = document.getElementById(`chk-${idx}`);
+      const row    = document.getElementById(`row-${idx}`);
+      const isComp = chk.checked ? 1 : 0;
+      subjectsData[currentIdx].students[idx].is_complete = isComp;
+      if (isComp) row.classList.add('row-done'); else row.classList.remove('row-done');
+      updateTabBadge();
+      flushSave(idx);
+    }
+
+    async function flushSave(idx) {
+      clearTimeout(saveTimers[idx]);
+      const subj = subjectsData[currentIdx];
+      const st   = subj.students[idx];
+      const val  = document.getElementById(`fb-${idx}`)?.value ?? st.feedback;
+
+      try {
+        await saveReport(st.id, subj.code, val, !!st.is_complete);
+        setSaveStatus('saved', '✅ 已保存 / Saved');
+      } catch (err) {
+        setSaveStatus('error', '❌ 保存失败: ' + err.message);
+      }
+    }
+
+    async function markAllComplete() {
+      const subj = subjectsData[currentIdx];
+      try {
+        setSaveStatus('saving', '⏳ 正在标记...');
+        await markSubjectComplete(subj.code);
+        subj.students.forEach((st, i) => {
+          st.is_complete = 1;
+          const chk = document.getElementById(`chk-${i}`);
+          const row = document.getElementById(`row-${i}`);
+          if (chk) chk.checked = true;
+          if (row) row.classList.add('row-done');
+        });
+        updateProgress();
+        updateTabBadge();
+        setSaveStatus('saved', '✅ 全部完成 / All done');
+      } catch (err) {
+        setSaveStatus('error', '❌ ' + err.message);
+      }
+    }
+
+    // ── Progress ──────────────────────────────────────────────────
+    function updateProgress() {
+      const subj = subjectsData[currentIdx];
+      const done = subj.students.filter(s => s.is_complete).length;
+      const tot  = subj.students.length;
+      document.getElementById('progressBar').value     = done;
+      document.getElementById('progressBar').max       = tot;
+      document.getElementById('progressLabel').textContent = `${done} / ${tot}`;
+    }
+
+    function updateTabBadge() {
+      subjectsData.forEach((subj, i) => {
+        const done  = subj.students.filter(s => s.is_complete).length;
+        const tot   = subj.students.length;
+        const allDone = done === tot && tot > 0;
+        const badge = document.querySelector(`#tab-${i} .badge`);
+        if (badge) {
+          badge.textContent = `${done}/${tot}`;
+          badge.className   = 'badge' + (allDone ? ' done' : '');
+        }
+      });
+    }
+
+    // ── Save Status ───────────────────────────────────────────────
+    let statusTimer = null;
+    function setSaveStatus(type, msg) {
+      const el = document.getElementById('saveStatus');
+      el.textContent = msg;
+      el.className = 'save-status ' + type;
+      clearTimeout(statusTimer);
+      if (type !== 'saving') {
+        statusTimer = setTimeout(() => {
+          el.textContent = '✅ 就绪 / Ready';
+          el.className = 'save-status';
+        }, 3000);
+      }
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

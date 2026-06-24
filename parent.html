@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>华联中学 — 学生成绩报告</title>
+  <meta name="description" content="华联中学 J3K 初三仁 学生学期报告">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-primary:                  #1a56db;
+      --pico-primary-background:       #1a56db;
+      --pico-primary-hover:            #1e40af;
+      --pico-primary-hover-background: #1e40af;
+    }
+
+    body {
+      background: #f0f4ff;
+      font-family: 'Segoe UI', Inter, Tahoma, sans-serif;
+    }
+
+    /* ── Report Card ── */
+    main.container {
+      max-width: 680px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* ── Header Card ── */
+    .report-header {
+      background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
+      border-radius: 16px 16px 0 0;
+      color: white;
+      padding: 1.75rem 2rem 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+    .school-name { font-size: 1.1rem; font-weight: 800; opacity: 0.92; }
+    .school-name-en { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+    .divider-line {
+      width: 60px; height: 2px;
+      background: rgba(255,255,255,0.4);
+      margin: 0.8rem auto;
+    }
+    .report-title { font-size: 0.9rem; opacity: 0.85; margin-bottom: 0.5rem; }
+    .semester-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 3px 14px; font-size: 0.78rem;
+    }
+
+    /* ── Student Info ── */
+    .student-card {
+      background: white;
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .student-photo {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #dbeafe;
+      box-shadow: 0 2px 8px rgba(26,86,219,0.15);
+      flex-shrink: 0;
+    }
+    .no-photo-ph {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; flex-shrink: 0;
+    }
+    .student-meta { flex: 1; }
+    .student-name { font-size: 1.05rem; font-weight: 800; color: #1a56db; margin-bottom: 0.25rem; }
+    .student-class { font-size: 0.82rem; color: #6b7280; }
+    .student-code { font-size: 0.75rem; color: #9ca3af; font-family: monospace; margin-top: 4px; }
+
+    /* ── Report Table ── */
+    .report-body { background: white; border-radius: 0 0 16px 16px; overflow: hidden; }
+
+    .section-title {
+      background: #f1f5f9; padding: 0.6rem 2rem;
+      font-size: 0.8rem; font-weight: 700; color: #1a56db;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    table.report-table { width: 100%; border-collapse: collapse; }
+    table.report-table th {
+      background: #1a56db; color: white;
+      padding: 8px 16px; font-size: 0.78rem; text-align: left;
+    }
+    table.report-table td {
+      padding: 10px 16px; font-size: 0.85rem;
+      border-bottom: 1px solid #f3f4f6; vertical-align: top;
+    }
+    table.report-table tr:last-child td { border-bottom: none; }
+    table.report-table tr:nth-child(even) td { background: #fafafa; }
+
+    .subject-name { font-weight: 700; color: #374151; white-space: nowrap; min-width: 100px; }
+    .feedback-text { color: #4b5563; line-height: 1.6; }
+    .feedback-empty { color: #d1d5db; font-style: italic; font-size: 0.8rem; }
+
+    .status-done  { color: #16a34a; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .status-pend  { color: #d97706; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+
+    /* ── Print Button ── */
+    .print-btn {
+      display: block; width: 100%; margin-top: 1.5rem;
+      text-align: center;
+    }
+    .print-btn button {
+      background: linear-gradient(135deg, #1a56db, #1e40af);
+      color: white; border: none; border-radius: 8px;
+      padding: 0.7rem 2rem; font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .print-btn button:hover { opacity: 0.9; }
+
+    /* ── Error/Loading ── */
+    .state-msg {
+      text-align: center; padding: 3rem 1rem;
+      background: white; border-radius: 16px;
+    }
+    .state-msg .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* ── Print Styles ── */
+    @media print {
+      body { background: white; }
+      .print-btn { display: none !important; }
+      main.container { margin: 0; max-width: 100%; }
+      .report-header { border-radius: 0 !important; }
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 576px) {
+      main.container { padding: 0; margin: 0; }
+      .report-header { border-radius: 0; padding: 1.25rem 1rem 1rem; }
+      .report-header h1 { font-size: 1rem; }
+      .student-card { padding: 1rem; gap: 1rem; }
+      .student-photo, .no-photo-ph { width: 70px; height: 70px; }
+      .student-name { font-size: 0.95rem; }
+      table.report-table th, table.report-table td { padding: 7px 10px; font-size: 0.8rem; }
+      .report-body { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container" id="mainContent">
+    <div class="state-msg" id="stateMsg">
+      <div class="icon">⏳</div>
+      <p>正在加载报告... / Loading report...</p>
+    </div>
+  </main>
+
+  <script src="js/report-api.js"></script>
+  <script>
+    const API_BASE_PARENT = 'https://hualian-reports.workers.dev'; // ⚠️ 与 report-api.js 一致
+
+    async function loadReport() {
+      const params = new URLSearchParams(window.location.search);
+      const code   = params.get('code')?.trim().toUpperCase();
+
+      const mainEl   = document.getElementById('mainContent');
+      const stateMsg = document.getElementById('stateMsg');
+
+      if (!code) {
+        stateMsg.innerHTML = `<div class="icon">❌</div><p>无效链接 / Invalid link<br>请联系班主任获取正确链接。</p>`;
+        return;
+      }
+
+      try {
+        const res  = await fetch(`${API_BASE_PARENT}/api/parent/report/${code}`);
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          stateMsg.innerHTML = `<div class="icon">🔍</div><p>${data.error || '找不到学生信息 / Student not found'}<br><small>Code: ${code}</small></p>`;
+          return;
+        }
+
+        const { student, reports } = data;
+        renderReport(mainEl, student, reports, code);
+
+      } catch (err) {
+        stateMsg.innerHTML = `<div class="icon">⚠️</div>
+          <p>无法连接服务器 / Cannot connect to server<br>
+          <small>${err.message}</small></p>`;
+      }
+    }
+
+    function renderReport(container, student, reports, code) {
+      const photoHtml = student.photo_url
+        ? `<img src="${student.photo_url}" class="student-photo" alt="${student.name}" onerror="this.outerHTML='<div class=no-photo-ph>👤</div>'">`
+        : `<div class="no-photo-ph">👤</div>`;
+
+      const reportRows = reports.length > 0
+        ? reports.map(r => `
+            <tr>
+              <td class="subject-name">${r.display_name.split('/')[0].trim()}</td>
+              <td class="feedback-text">${r.feedback
+                ? r.feedback.replace(/\n/g, '<br>')
+                : '<span class="feedback-empty">— 待填写 / Pending —</span>'
+              }</td>
+              <td>${r.is_complete
+                ? '<span class="status-done">✔ 完成</span>'
+                : '<span class="status-pend">⏳ 待完成</span>'
+              }</td>
+            </tr>
+          `).join('')
+        : `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:2rem">
+            评语尚未录入 / No reports available yet
+           </td></tr>`;
+
+      container.innerHTML = `
+        <!-- Report Header -->
+        <div class="report-header">
+          <div class="school-name">华联中学</div>
+          <div class="school-name-en">Hua Lian High School</div>
+          <div class="divider-line"></div>
+          <div class="report-title">J3K 初三仁 · 学期综合评语报告</div>
+          <div class="report-title" style="font-size:0.75rem">Term Comprehensive Report · 2026</div>
+          <div style="margin-top:0.6rem">
+            <span class="semester-badge">2026 学年上学期</span>
+          </div>
+        </div>
+
+        <!-- Student Info -->
+        <div class="student-card">
+          ${photoHtml}
+          <div class="student-meta">
+            <div class="student-name">${student.name}</div>
+            <div class="student-class">🏫 J3K 初三仁 · 华联中学</div>
+            <div class="student-class" style="margin-top:3px">📅 2026 学年第一学期</div>
+            <div class="student-code">Code: ${code}</div>
+          </div>
+        </div>
+
+        <!-- Report Table -->
+        <div class="report-body">
+          <div class="section-title">📋 各科老师评语 / Subject Teacher Comments</div>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>科目 / Subject</th>
+                <th>教师评语 / Teacher's Comment</th>
+                <th>状态 / Status</th>
+              </tr>
+            </thead>
+            <tbody>${reportRows}</tbody>
+          </table>
+        </div>
+
+        <!-- Print Button -->
+        <div class="print-btn">
+          <button onclick="window.print()">🖨️ 打印报告 / Print Report</button>
+        </div>
+
+        <footer style="text-align:center;color:#9ca3af;font-size:0.72rem;padding:1.5rem 0">
+          © 2026 华联中学 · Hua Lian High School · 评语系统
+        </footer>
+      `;
+    }
+
+    loadReport();
+  </script>
+</body>
+</html>

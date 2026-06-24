@@ -1,0 +1,18 @@
+{
+  "name": "hualian-reports-worker",
+  "main": "worker.js",
+  "compatibility_date": "2025-05-02",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "report-system-db",
+      "database_id": "3093d910-4ee8-4557-a26f-d519a61b6be0",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "CORS_ORIGIN": "https://vincecham91-png.github.io",
+    "PARENT_BASE_URL": "https://vincecham91-png.github.io/J3K/parent.html",
+    "SESSION_DURATION_DAYS": "7"
+  }
+}

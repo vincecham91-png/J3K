@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>华联中学 — 教师登录</title>
+  <meta name="description" content="华联中学 Hua Lian High School 教师评语系统登录页">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-primary:                  #1a56db;
+      --pico-primary-background:       #1a56db;
+      --pico-primary-hover:            #1e40af;
+      --pico-primary-hover-background: #1e40af;
+      --pico-border-radius:            10px;
+    }
+
+    body {
+      min-height: 100vh;
+      display:    flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #f8fafc 100%);
+      font-family: 'Segoe UI', Inter, Tahoma, sans-serif;
+      padding: 1rem;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    article {
+      border-radius: 16px !important;
+      box-shadow: 0 8px 32px rgba(26,86,219,0.12), 0 2px 8px rgba(0,0,0,0.06);
+      padding: 2.5rem 2rem;
+    }
+
+    .school-badge {
+      text-align: center;
+      margin-bottom: 1.8rem;
+    }
+    .school-badge .icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .school-badge h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--pico-primary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .school-badge .subtitle {
+      font-size: 0.82rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+
+    .system-label {
+      text-align: center;
+      background: linear-gradient(135deg, #1a56db, #3b82f6);
+      color: white;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.8rem;
+      letter-spacing: 0.02em;
+    }
+
+    label { font-weight: 600; font-size: 0.9rem; }
+
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    footer.card-footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: 1rem;
+      padding: 0.75rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <article>
+      <div class="school-badge">
+        <span class="icon">🏫</span>
+        <h1>华联中学</h1>
+        <div>Hua Lian High School</div>
+        <div class="subtitle">J3K 初三仁 · 2026</div>
+      </div>
+
+      <div class="system-label">📋 教师评语系统 · Teacher Report System</div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <form id="loginForm" novalidate>
+        <label for="username">用户名 / Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="例如 math_t / chinese_t / form_teacher"
+          autocomplete="username"
+          required
+        >
+
+        <label for="password">密码 / Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="输入密码 / Enter password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button type="submit" id="loginBtn">
+          登录 / Login
+        </button>
+      </form>
+
+      <footer class="card-footer">
+        © 2026 华联中学 · Hua Lian High School<br>
+        如忘记密码请联系班主任
+      </footer>
+    </article>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    // If already logged in, redirect to report page
+    if (getToken() && getUser()) {
+      const u = getUser();
+      window.location.href = u.role === 'form_teacher' ? 'form-teacher.html' : 'teacher-report.html';
+    }
+
+    const form      = document.getElementById('loginForm');
+    const loginBtn  = document.getElementById('loginBtn');
+    const errorMsg  = document.getElementById('errorMsg');
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+    function hideError() {
+      errorMsg.style.display = 'none';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showError('请填写用户名和密码 / Please enter username and password');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner"></span>登录中... / Logging in...';
+
+      try {
+        const data = await login(username, password);
+        const user = data.teacher;
+
+        if (user.role === 'form_teacher') {
+          window.location.href = 'form-teacher.html';
+        } else {
+          window.location.href = 'teacher-report.html';
+        }
+      } catch (err) {
+        showError(err.message || '登录失败，请检查用户名和密码 / Login failed');
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '登录 / Login';
+      }
+    });
+  </script>
+</body>
+</html>

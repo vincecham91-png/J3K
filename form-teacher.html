@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>华联中学 — 班主任仪表盘</title>
+  <meta name="description" content="华联中学班主任评语管理仪表盘">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-primary:                  #1a56db;
+      --pico-primary-background:       #1a56db;
+      --pico-primary-hover:            #1e40af;
+      --pico-primary-hover-background: #1e40af;
+    }
+    body { font-family: 'Segoe UI', Inter, Tahoma, sans-serif; background: #f8fafc; }
+
+    .app-header {
+      background: linear-gradient(135deg, #1a56db, #1e40af);
+      color: white; padding: 0.85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.5rem;
+      box-shadow: 0 2px 8px rgba(26,86,219,0.25);
+    }
+    .app-header h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
+    .app-header .meta { font-size: 0.78rem; opacity: 0.85; }
+    .header-right { display: flex; gap: 0.75rem; align-items: center; }
+    .btn-logout {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35);
+      color: white; border-radius: 6px; padding: 5px 12px;
+      font-size: 0.8rem; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Section Cards ── */
+    .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1rem; font-weight: 700; color: #1a56db;
+      margin-bottom: 1rem; padding-bottom: 0.6rem;
+      border-bottom: 2px solid #dbeafe;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    /* ── Summary Matrix ── */
+    .matrix-scroll { overflow-x: auto; }
+    .matrix-table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
+    .matrix-table th {
+      background: #1a56db; color: white;
+      padding: 6px 8px; text-align: center;
+      font-weight: 600; white-space: nowrap;
+      position: sticky; top: 0;
+    }
+    .matrix-table th.name-col { text-align: left; min-width: 160px; }
+    .matrix-table td { padding: 5px 6px; text-align: center; border-bottom: 1px solid #f3f4f6; }
+    .matrix-table td.name-col { text-align: left; font-weight: 600; font-size: 0.8rem; }
+    .matrix-table tr:nth-child(even) td { background: #fafafa; }
+    .matrix-table tr:hover td { background: #f0f4ff; }
+
+    .cell-done  { background: #dcfce7 !important; color: #16a34a; font-size: 1rem; }
+    .cell-empty { background: #fef2f2 !important; color: #dc2626; font-size: 0.7rem; }
+    .cell-partial { background: #fefce8 !important; color: #d97706; font-size: 0.7rem; }
+
+    /* Overall progress per row */
+    .row-progress { font-size: 0.7rem; color: #6b7280; white-space: nowrap; }
+
+    /* ── Links Section ── */
+    .links-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .links-table-wrap { max-height: 420px; overflow-y: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .links-table { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+    .links-table th { background: #f1f5f9; color: #374151; padding: 8px 12px; text-align: left; font-weight: 700; position: sticky; top: 0; }
+    .links-table td { padding: 7px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .links-table tr:last-child td { border-bottom: none; }
+    .link-url { font-family: monospace; font-size: 0.75rem; color: #1a56db; word-break: break-all; }
+    .btn-copy-one {
+      background: #f1f5f9; border: 1px solid #d1d5db;
+      border-radius: 4px; padding: 3px 8px; font-size: 0.72rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-copy-one:hover { background: #dbeafe; }
+
+    /* ── Password Reset ── */
+    .reset-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+    .reset-form label { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.25rem; display: block; }
+    .reset-form input {
+      border: 1px solid #d1d5db; border-radius: 6px;
+      padding: 0.45rem 0.75rem; font-size: 0.85rem; font-family: inherit;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: #1a56db; color: white;
+      border-radius: 8px; padding: 0.75rem 1.25rem;
+      font-size: 0.85rem; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(26,86,219,0.3);
+      z-index: 9999; opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Loading ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; gap: 1rem;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #dbeafe; border-top-color: #1a56db;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span style="color:#1a56db;font-size:1rem">正在加载... / Loading...</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="app-header">
+  <div>
+    <h1>🏫 华联中学 · Hua Lian High School — 班主任仪表盘</h1>
+    <div class="meta">J3K 初三仁 · 2026 · Form Teacher Dashboard</div>
+  </div>
+  <div class="header-right">
+    <button class="btn-logout" onclick="logout()">退出 / Logout</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── Section 1: Summary Matrix ── -->
+  <div class="card">
+    <div class="card-title">📊 全科完成情况矩阵 / Completion Matrix</div>
+    <div class="matrix-scroll">
+      <table class="matrix-table">
+        <thead id="matrixHead"><tr></tr></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:0.75rem;color:#6b7280;margin-top:0.75rem">
+      🟢 有评语 &nbsp; 🔴 未填写 &nbsp; 共 <span id="totalStats">—</span>
+    </p>
+  </div>
+
+  <!-- ── Section 2: Parent Links ── -->
+  <div class="card">
+    <div class="card-title">🔗 家长报告链接 / Parent Report Links</div>
+    <div class="links-controls">
+      <button onclick="loadLinks()" id="genBtn">🔄 生成/刷新链接 / Generate Links</button>
+      <button class="secondary" onclick="copyAllLinks()" id="copyAllBtn" disabled>📋 复制全部链接 / Copy All</button>
+      <button class="secondary" onclick="exportLinksCSV()" id="exportBtn" disabled>⬇️ 导出 CSV</button>
+    </div>
+    <div class="links-table-wrap" id="linksWrap" style="display:none">
+      <table class="links-table">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>学生姓名 / Student Name</th>
+            <th>访问码 / Code</th>
+            <th>链接 / URL</th>
+            <th>操作 / Action</th>
+          </tr>
+        </thead>
+        <tbody id="linksBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Section 3: Password Management ── -->
+  <div class="card">
+    <div class="card-title">🔑 重置教师密码 / Reset Teacher Password</div>
+    <div class="reset-form">
+      <div>
+        <label for="resetUser">教师用户名 / Teacher Username</label>
+        <input type="text" id="resetUser" placeholder="例如 math_t" style="width:200px">
+      </div>
+      <div>
+        <label for="resetPwd">新密码 / New Password</label>
+        <input type="password" id="resetPwd" placeholder="至少4位" style="width:180px">
+      </div>
+      <button onclick="doResetPassword()" style="margin-bottom:0">重置密码 / Reset</button>
+    </div>
+    <p style="font-size:0.78rem;color:#6b7280;margin-top:0.75rem">
+      ⚠️ 重置后该教师所有会话将立即失效，需要重新登录。
+    </p>
+  </div>
+
+  <!-- ── Section 4: Change Own Password ── -->
+  <div class="card">
+    <div class="card-title">🔒 修改我的密码 / Change My Password</div>
+    <div class="reset-form">
+      <div>
+        <label for="oldPwd">旧密码 / Old Password</label>
+        <input type="password" id="oldPwd" style="width:180px">
+      </div>
+      <div>
+        <label for="newPwd">新密码 / New Password</label>
+        <input type="password" id="newPwd" style="width:180px">
+      </div>
+      <button onclick="doChangePassword()">修改 / Change</button>
+    </div>
+  </div>
+
+  <footer style="text-align:center;color:#9ca3af;font-size:0.75rem;padding:1rem 0">
+    © 2026 华联中学 · Hua Lian High School · 评语系统
+  </footer>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/report-api.js"></script>
+<script>
+  // ── Auth Guard ─────────────────────────────────────────────────
+  requireAuth('form_teacher');
+
+  let linksData     = [];
+  let subjectsOrder = [];
+
+  // ── Load Summary Matrix ────────────────────────────────────────
+  async function init() {
+    try {
+      const data       = await getSummary();
+      const students   = data.students;
+      const subjects   = data.subjects;
+      subjectsOrder    = subjects.map(s => s.code);
+
+      // Build matrix header
+      const thead = document.querySelector('#matrixHead tr');
+      thead.innerHTML = `<th class="name-col">学生 / Student</th>` +
+        subjects.map(s => `<th title="${s.display_name}">${s.display_name.split('/')[0].trim()}</th>`).join('') +
+        `<th>完成 / Done</th>`;
+
+      // Build matrix body
+      const tbody = document.getElementById('matrixBody');
+      tbody.innerHTML = '';
+      let totalDone = 0, totalCells = 0;
+
+      students.forEach((st, idx) => {
+        const tr   = document.createElement('tr');
+        let doneCount = 0;
+
+        let cells = `<td class="name-col">${idx + 1}. ${st.name}</td>`;
+        subjects.forEach(s => {
+          const r = st.reports[s.code];
+          const hasFeedback  = r?.feedback?.trim().length > 0;
+          const isComplete   = r?.is_complete;
+
+          if (hasFeedback) { doneCount++; totalDone++; }
+          totalCells++;
+
+          if (hasFeedback) {
+            cells += `<td class="cell-done" title="${r.feedback.substring(0, 60)}">✔</td>`;
+          } else {
+            cells += `<td class="cell-empty">—</td>`;
+          }
+        });
+
+        const pct = Math.round((doneCount / subjects.length) * 100);
+        cells += `<td><div class="row-progress">${doneCount}/${subjects.length} (${pct}%)</div></td>`;
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('totalStats').textContent =
+        `${totalDone} / ${totalCells} 格已填写 (${Math.round(totalDone/totalCells*100)}%)`;
+
+      document.getElementById('loadingOverlay').style.display = 'none';
+    } catch (err) {
+      document.getElementById('loadingOverlay').innerHTML =
+        `<p style="color:#dc2626">❌ ${err.message}<br><a href="teacher-login.html">重新登录</a></p>`;
+    }
+  }
+
+  // ── Links ──────────────────────────────────────────────────────
+  async function loadLinks() {
+    document.getElementById('genBtn').disabled = true;
+    document.getElementById('genBtn').textContent = '⏳ 生成中...';
+    try {
+      const data  = await generateLinks();
+      linksData   = data.links;
+      const tbody = document.getElementById('linksBody');
+      tbody.innerHTML = '';
+
+      linksData.forEach((l, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td style="font-weight:600">${l.name}</td>
+          <td><code>${l.parent_code}</code></td>
+          <td><a class="link-url" href="${l.url}" target="_blank">${l.url}</a></td>
+          <td><button class="btn-copy-one" onclick="copySingle('${l.url}', this)">复制</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('linksWrap').style.display = 'block';
+      document.getElementById('copyAllBtn').disabled = false;
+      document.getElementById('exportBtn').disabled  = false;
+      showToast('✅ 链接已生成 / Links generated');
+    } catch (err) {
+      showToast('❌ ' + err.message);
+    }
+    document.getElementById('genBtn').disabled = false;
+    document.getElementById('genBtn').textContent = '🔄 生成/刷新链接 / Generate Links';
+  }
+
+  function copySingle(url, btn) {
+    navigator.clipboard.writeText(url).then(() => {
+      btn.textContent = '✓ 已复制';
+      setTimeout(() => btn.textContent = '复制', 1500);
+    });
+  }
+
+  function copyAllLinks() {
+    const text = linksData.map(l => `${l.name}: ${l.url}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('✅ 全部链接已复制到剪贴板'));
+  }
+
+  function exportLinksCSV() {
+    const rows = [['No', 'Student Name', 'Code', 'URL']];
+    linksData.forEach((l, i) => rows.push([i + 1, `"${l.name}"`, l.parent_code, l.url]));
+    const csv = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map(r => r.join(',')).join('\n');
+    const a   = document.createElement('a');
+    a.href     = encodeURI(csv);
+    a.download = 'J3K_parent_links.csv';
+    a.click();
+  }
+
+  // ── Password Management ────────────────────────────────────────
+  async function doResetPassword() {
+    const username  = document.getElementById('resetUser').value.trim();
+    const newPwd    = document.getElementById('resetPwd').value;
+    if (!username || !newPwd) { showToast('❌ 请填写用户名和新密码'); return; }
+    try {
+      await resetPassword(username, newPwd);
+      showToast(`✅ ${username} 的密码已重置`);
+      document.getElementById('resetUser').value = '';
+      document.getElementById('resetPwd').value  = '';
+    } catch (err) {
+      showToast('❌ ' + err.message);
+    }
+  }
+
+  async function doChangePassword() {
+    const oldPwd = document.getElementById('oldPwd').value;
+    const newPwd = document.getElementById('newPwd').value;
+    if (!oldPwd || !newPwd) { showToast('❌ 请填写旧密码和新密码'); return; }
+    try {
+      await changePassword(oldPwd, newPwd);
+      showToast('✅ 密码已修改成功 / Password changed');
+      document.getElementById('oldPwd').value = '';
+      document.getElementById('newPwd').value = '';
+    } catch (err) {
+      showToast('❌ ' + err.message);
+    }
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  init();
+</script>
+</body>
+</html>
