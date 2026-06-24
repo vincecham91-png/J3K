@@ -71,7 +71,7 @@ const subjects = [
 ];
 
 const teachers = [
-  { username: 'form_teacher', display: '班主任',              role: 'form_teacher', password: 'f123', subjects: [] },
+  { username: 'form_teacher', display: '班主任',              role: 'form_teacher', password: '12345', subjects: [] },
   { username: 'math_t',       display: 'Math 数学老师',       role: 'teacher',      password: 'm123', subjects: ['math'] },
   { username: 'english_t',    display: 'English 英语老师',    role: 'teacher',      password: 'e123', subjects: ['english'] },
   { username: 'malay_t',      display: 'Malay 马来语老师',    role: 'teacher',      password: 'm123', subjects: ['malay'] },
