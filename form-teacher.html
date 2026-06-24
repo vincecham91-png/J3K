@@ -83,6 +83,39 @@
     }
     .btn-copy-one:hover { background: #dbeafe; }
 
+    /* ── Edit Reports Section ── */
+    .edit-select-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .edit-select-row select { max-width: 320px; }
+    .edit-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .edit-table { border-collapse: collapse; width: 100%; font-size: 0.82rem; margin: 0; }
+    .edit-table th {
+      background: #1a56db; color: white;
+      padding: 8px 12px; font-weight: 700; text-align: left; white-space: nowrap;
+    }
+    .edit-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .edit-table tr:last-child td { border-bottom: none; }
+    .edit-table tr:nth-child(even) td { background: #fafafa; }
+    .edit-table tr:hover td { background: #f0f4ff; }
+    .edit-table tr.row-done td { background: #f0fdf4 !important; }
+    .edit-table .col-e-no    { width: 40px; text-align: center; color: #9ca3af; }
+    .edit-table .col-e-name  { font-weight: 600; min-width: 140px; }
+    .edit-table .col-e-fb    { min-width: 280px; }
+    .edit-table .col-e-done  { width: 70px; text-align: center; }
+    .edit-fb-area {
+      width: 100%; min-height: 60px; resize: vertical;
+      border: 1px solid #d1d5db; border-radius: 6px;
+      padding: 0.45rem 0.6rem; font-size: 0.82rem;
+      font-family: inherit; transition: border 0.2s;
+      box-sizing: border-box; background: white;
+    }
+    .edit-fb-area:focus { outline: none; border-color: var(--pico-primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+    .edit-done-check { width: 18px; height: 18px; accent-color: #16a34a; cursor: pointer; }
+    .edit-save-status { font-size: 0.8rem; color: #6b7280; min-width: 160px; }
+    .edit-save-status.saving { color: #d97706; }
+    .edit-save-status.saved  { color: #16a34a; }
+    .edit-save-status.error  { color: #dc2626; }
+    .edit-progress { font-size: 0.82rem; color: #6b7280; }
+
     /* ── Password Reset ── */
     .reset-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
     .reset-form label { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.25rem; display: block; }
@@ -178,7 +211,33 @@
     </div>
   </div>
 
-  <!-- ── Section 3: Password Management ── -->
+  <!-- ── Section 3: Edit Reports ── -->
+  <div class="card">
+    <div class="card-title">✏️ 编辑评语 / Edit Reports</div>
+    <div class="edit-select-row">
+      <label for="editSubject" style="margin-bottom:0;font-weight:600">选择科目 / Select Subject:</label>
+      <select id="editSubject" onchange="switchEditSubject()">
+        <option value="" disabled selected>-- 选择科目 --</option>
+      </select>
+      <span class="edit-progress" id="editProgress"></span>
+      <span class="edit-save-status" id="editSaveStatus">✅ 就绪 / Ready</span>
+    </div>
+    <div class="edit-table-wrap" id="editTableWrap" style="display:none">
+      <table class="edit-table">
+        <thead>
+          <tr>
+            <th class="col-e-no">No.</th>
+            <th class="col-e-name">学生姓名 / Student</th>
+            <th class="col-e-fb">评语 / Feedback</th>
+            <th class="col-e-done">完成 / Done</th>
+          </tr>
+        </thead>
+        <tbody id="editTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Section 4: Password Management ── -->
   <div class="card">
     <div class="card-title">🔑 重置教师密码 / Reset Teacher Password</div>
     <div class="reset-form">
@@ -197,7 +256,7 @@
     </p>
   </div>
 
-  <!-- ── Section 4: Change Own Password ── -->
+  <!-- ── Section 5: Change Own Password ── -->
   <div class="card">
     <div class="card-title">🔒 修改我的密码 / Change My Password</div>
     <div class="reset-form">
@@ -366,6 +425,11 @@
     }
   }
 
+  // ── Utilities ─────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   // ── Toast ──────────────────────────────────────────────────────
   let toastTimer = null;
   function showToast(msg) {
@@ -377,6 +441,148 @@
   }
 
   init();
+
+  // ── Edit Reports ────────────────────────────────────────────────
+  let editSubjectsData = [];   // [{ code, display_name, students: [...] }]
+  let editCurrentCode  = null;
+  let editSaveTimers   = {};
+
+  async function loadEditData() {
+    try {
+      const data = await getMyReports();
+      editSubjectsData = data.subjects || [];
+      // Populate subject dropdown
+      const sel = document.getElementById('editSubject');
+      sel.innerHTML = '<option value="" disabled selected>-- 选择科目 --</option>';
+      editSubjectsData.forEach(s => {
+        const done = s.students.filter(st => st.is_complete).length;
+        const tot  = s.students.length;
+        sel.innerHTML += `<option value="${s.code}">${s.display_name.split('/')[0].trim()} (${done}/${tot})</option>`;
+      });
+    } catch (err) {
+      showToast('❌ 加载编辑数据失败: ' + err.message);
+    }
+  }
+
+  function switchEditSubject() {
+    const code = document.getElementById('editSubject').value;
+    editCurrentCode = code;
+    renderEditTable();
+  }
+
+  function renderEditTable() {
+    const subj = editSubjectsData.find(s => s.code === editCurrentCode);
+    if (!subj) {
+      document.getElementById('editTableWrap').style.display = 'none';
+      return;
+    }
+    document.getElementById('editTableWrap').style.display = 'block';
+
+    const tbody = document.getElementById('editTableBody');
+    tbody.innerHTML = '';
+    subj.students.forEach((st, i) => {
+      const tr = document.createElement('tr');
+      tr.id = `erow-${i}`;
+      if (st.is_complete) tr.classList.add('row-done');
+      tr.innerHTML = `
+        <td class="col-e-no">${i + 1}</td>
+        <td class="col-e-name">${st.name}</td>
+        <td class="col-e-fb">
+          <textarea class="edit-fb-area" id="efb-${i}"
+            placeholder="输入评语 / Enter feedback..."
+            oninput="handleEditInput(${i})"
+            onblur="flushEditSave(${i})">${escapeHtml(st.feedback || '')}</textarea>
+        </td>
+        <td class="col-e-done">
+          <input type="checkbox" class="edit-done-check" id="echk-${i}"
+            ${st.is_complete ? 'checked' : ''}
+            onchange="handleEditCheckbox(${i})">
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    updateEditProgress();
+  }
+
+  function handleEditInput(idx) {
+    const val     = document.getElementById(`efb-${idx}`).value;
+    const checked = val.trim().length > 0;
+    const chk     = document.getElementById(`echk-${idx}`);
+    const row     = document.getElementById(`erow-${idx}`);
+    chk.checked = checked;
+    if (checked) row.classList.add('row-done'); else row.classList.remove('row-done');
+
+    const subj = editSubjectsData.find(s => s.code === editCurrentCode);
+    subj.students[idx].feedback    = val;
+    subj.students[idx].is_complete = checked ? 1 : 0;
+
+    updateEditProgress();
+    setEditSaveStatus('saving', '⏳ 正在保存... / Saving...');
+    clearTimeout(editSaveTimers[idx]);
+    editSaveTimers[idx] = setTimeout(() => flushEditSave(idx), 1500);
+  }
+
+  function handleEditCheckbox(idx) {
+    const chk    = document.getElementById(`echk-${idx}`);
+    const row    = document.getElementById(`erow-${idx}`);
+    const isComp = chk.checked ? 1 : 0;
+    const subj   = editSubjectsData.find(s => s.code === editCurrentCode);
+    subj.students[idx].is_complete = isComp;
+    if (isComp) row.classList.add('row-done'); else row.classList.remove('row-done');
+    updateEditProgress();
+    flushEditSave(idx);
+  }
+
+  async function flushEditSave(idx) {
+    clearTimeout(editSaveTimers[idx]);
+    const subj = editSubjectsData.find(s => s.code === editCurrentCode);
+    const st   = subj.students[idx];
+    const val  = document.getElementById(`efb-${idx}`)?.value ?? st.feedback;
+    try {
+      await saveReport(st.id, subj.code, val, !!st.is_complete);
+      setEditSaveStatus('saved', '✅ 已保存 / Saved');
+      // Refresh subject dropdown badges and matrix
+      updateEditSubjectBadge();
+      init().catch(() => {});
+    } catch (err) {
+      setEditSaveStatus('error', '❌ 保存失败: ' + err.message);
+    }
+  }
+
+  function updateEditProgress() {
+    const subj = editSubjectsData.find(s => s.code === editCurrentCode);
+    if (!subj) return;
+    const done = subj.students.filter(s => s.is_complete).length;
+    const tot  = subj.students.length;
+    document.getElementById('editProgress').textContent = `${done} / ${tot} 已完成`;
+  }
+
+  function updateEditSubjectBadge() {
+    const sel = document.getElementById('editSubject');
+    editSubjectsData.forEach(s => {
+      const done = s.students.filter(st => st.is_complete).length;
+      const tot  = s.students.length;
+      const opt = sel.querySelector(`option[value="${s.code}"]`);
+      if (opt) opt.textContent = `${s.display_name.split('/')[0].trim()} (${done}/${tot})`;
+    });
+  }
+
+  let editStatusTimer = null;
+  function setEditSaveStatus(type, msg) {
+    const el = document.getElementById('editSaveStatus');
+    el.textContent = msg;
+    el.className   = 'edit-save-status ' + type;
+    clearTimeout(editStatusTimer);
+    if (type !== 'saving') {
+      editStatusTimer = setTimeout(() => {
+        el.textContent = '✅ 就绪 / Ready';
+        el.className   = 'edit-save-status';
+      }, 3000);
+    }
+  }
+
+  // Load edit data on page load
+  loadEditData();
 </script>
 </body>
 </html>
