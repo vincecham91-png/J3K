@@ -100,6 +100,119 @@
       padding: 0.75rem;
     }
 
+    /* ── 下拉框增强 ──────────────────────────────── */
+    select#username {
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem;
+      border: 2px solid #d1d5db;
+      background: white;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    select#username:focus {
+      border-color: var(--pico-primary);
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.15);
+      outline: none;
+    }
+
+    /* ── 科目快捷卡片网格 ────────────────────────── */
+    .subject-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .subject-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      padding: 0.6rem 0.3rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      color: #374151;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 72px;
+    }
+    .subject-card:hover {
+      border-color: var(--pico-primary);
+      background: #f0f4ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26,86,219,0.12);
+    }
+    .subject-card:active {
+      transform: scale(0.96);
+    }
+    .subject-card.selected {
+      border-color: var(--pico-primary);
+      background: linear-gradient(135deg, #eef2ff, #dbeafe);
+      box-shadow: 0 0 0 2px rgba(26,86,219,0.25);
+      color: var(--pico-primary);
+      font-weight: 700;
+    }
+
+    /* 班主任卡片特殊强调 */
+    .subject-card.form-teacher {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+    .subject-card.form-teacher:hover {
+      border-color: #d97706;
+      background: #fef3c7;
+    }
+    .subject-card.form-teacher.selected {
+      border-color: #d97706;
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      box-shadow: 0 0 0 2px rgba(217,119,6,0.3);
+      color: #92400e;
+    }
+
+    .card-emoji {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+    .card-sub {
+      font-size: 0.6rem;
+      color: #9ca3af;
+      line-height: 1;
+      font-weight: 400;
+    }
+    .subject-card.selected .card-sub {
+      color: inherit;
+      opacity: 0.7;
+    }
+
+    /* 响应式：平板 3 列，手机 2 列 */
+    @media (max-width: 480px) {
+      .subject-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+      }
+      .subject-card {
+        padding: 0.5rem 0.2rem;
+        min-height: 64px;
+      }
+      .card-emoji { font-size: 1.2rem; }
+      .card-label { font-size: 0.7rem; }
+    }
+    @media (max-width: 360px) {
+      .subject-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     .spinner {
       display: inline-block;
       width: 16px; height: 16px;
@@ -128,15 +241,96 @@
       <div class="error-msg" id="errorMsg"></div>
 
       <form id="loginForm" novalidate>
-        <label for="username">用户名 / Username</label>
-        <input
-          type="text"
-          id="username"
-          name="username"
-          placeholder="例如 math_t / chinese_t / form_teacher"
-          autocomplete="username"
-          required
-        >
+        <label for="username">选择身份 / Select Role</label>
+        <select id="username" name="username" required>
+          <option value="" disabled selected>-- 请选择身份 / Select Teacher --</option>
+          <optgroup label="👨‍🏫 班主任 / Form Teacher">
+            <option value="form_teacher">📋 班主任 / Form Teacher</option>
+          </optgroup>
+          <optgroup label="📚 科任老师 / Subject Teachers">
+            <option value="math_t">📐 数学 / Mathematics</option>
+            <option value="english_t">📖 英语 / English</option>
+            <option value="malay_t">🗣️ 马来语 / Malay</option>
+            <option value="chinese_t">📝 华语 / Chinese</option>
+            <option value="history_t">🏛️ 历史 / History</option>
+            <option value="geography_t">🌍 地理 / Geography</option>
+            <option value="physic_t">⚛️ 物理 / Physics</option>
+            <option value="chemistry_t">🧪 化学 / Chemistry</option>
+            <option value="biology_t">🧬 生物 / Biology</option>
+            <option value="art_t">🎨 美术 / Art</option>
+            <option value="computer_t">💻 电脑 / Computer</option>
+            <option value="robotics_t">🤖 机器人 / Robotics</option>
+          </optgroup>
+        </select>
+
+        <!-- 科目快捷选择卡片 -->
+        <div class="subject-grid" id="subjectGrid">
+          <button type="button" class="subject-card form-teacher" data-value="form_teacher">
+            <span class="card-emoji">📋</span>
+            <span class="card-label">班主任</span>
+            <span class="card-sub">Form Teacher</span>
+          </button>
+          <button type="button" class="subject-card" data-value="math_t">
+            <span class="card-emoji">📐</span>
+            <span class="card-label">数学</span>
+            <span class="card-sub">Mathematics</span>
+          </button>
+          <button type="button" class="subject-card" data-value="english_t">
+            <span class="card-emoji">📖</span>
+            <span class="card-label">英语</span>
+            <span class="card-sub">English</span>
+          </button>
+          <button type="button" class="subject-card" data-value="malay_t">
+            <span class="card-emoji">🗣️</span>
+            <span class="card-label">马来语</span>
+            <span class="card-sub">Malay</span>
+          </button>
+          <button type="button" class="subject-card" data-value="chinese_t">
+            <span class="card-emoji">📝</span>
+            <span class="card-label">华语</span>
+            <span class="card-sub">Chinese</span>
+          </button>
+          <button type="button" class="subject-card" data-value="history_t">
+            <span class="card-emoji">🏛️</span>
+            <span class="card-label">历史</span>
+            <span class="card-sub">History</span>
+          </button>
+          <button type="button" class="subject-card" data-value="geography_t">
+            <span class="card-emoji">🌍</span>
+            <span class="card-label">地理</span>
+            <span class="card-sub">Geography</span>
+          </button>
+          <button type="button" class="subject-card" data-value="physic_t">
+            <span class="card-emoji">⚛️</span>
+            <span class="card-label">物理</span>
+            <span class="card-sub">Physics</span>
+          </button>
+          <button type="button" class="subject-card" data-value="chemistry_t">
+            <span class="card-emoji">🧪</span>
+            <span class="card-label">化学</span>
+            <span class="card-sub">Chemistry</span>
+          </button>
+          <button type="button" class="subject-card" data-value="biology_t">
+            <span class="card-emoji">🧬</span>
+            <span class="card-label">生物</span>
+            <span class="card-sub">Biology</span>
+          </button>
+          <button type="button" class="subject-card" data-value="art_t">
+            <span class="card-emoji">🎨</span>
+            <span class="card-label">美术</span>
+            <span class="card-sub">Art</span>
+          </button>
+          <button type="button" class="subject-card" data-value="computer_t">
+            <span class="card-emoji">💻</span>
+            <span class="card-label">电脑</span>
+            <span class="card-sub">Computer</span>
+          </button>
+          <button type="button" class="subject-card" data-value="robotics_t">
+            <span class="card-emoji">🤖</span>
+            <span class="card-label">机器人</span>
+            <span class="card-sub">Robotics</span>
+          </button>
+        </div>
 
         <label for="password">密码 / Password</label>
         <input
@@ -171,6 +365,22 @@
     const form      = document.getElementById('loginForm');
     const loginBtn  = document.getElementById('loginBtn');
     const errorMsg  = document.getElementById('errorMsg');
+    const selectEl  = document.getElementById('username');
+    const cards     = document.querySelectorAll('.subject-card');
+
+    // ── 卡片 ↔ 下拉框双向同步 ─────────────────────
+    function syncCardsToSelect(value) {
+      cards.forEach(c => c.classList.toggle('selected', c.dataset.value === value));
+    }
+    // 下拉框变化 → 同步卡片高亮
+    selectEl.addEventListener('change', () => syncCardsToSelect(selectEl.value));
+    // 点击卡片 → 同步下拉框
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        selectEl.value = card.dataset.value;
+        syncCardsToSelect(card.dataset.value);
+      });
+    });
 
     function showError(msg) {
       errorMsg.textContent = msg;
