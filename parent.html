@@ -180,7 +180,9 @@
         }
 
         const { student, reports } = data;
-        renderReport(mainEl, student, reports, code);
+        // 只显示有实际评语的科目（前端兜底过滤）
+        const filledReports = (reports || []).filter(r => r.feedback && r.feedback.trim());
+        renderReport(mainEl, student, filledReports, code);
 
       } catch (err) {
         stateMsg.innerHTML = `<div class="icon">⚠️</div>

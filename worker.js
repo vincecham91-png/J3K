@@ -437,7 +437,7 @@ async function handleParentReport(request, env, pathname, cors) {
     `SELECT r.subject_code, s.display_name, r.feedback, r.is_complete
      FROM reports r
      JOIN subjects s ON r.subject_code = s.code
-     WHERE r.student_id = ?
+     WHERE r.student_id = ? AND r.feedback IS NOT NULL AND r.feedback != ''
      ORDER BY s.sort_order`
   ).bind(student.id).all();
 
